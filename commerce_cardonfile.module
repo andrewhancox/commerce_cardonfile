@@ -1,0 +1,78 @@
+<?php
+
+/**
+ * @file
+ * Supports card on file functionality for credit card payment methods by
+ * associating card data reference IDs from payment gateways with user accounts.
+ */
+
+
+/**
+ * Loads stored card data by ID.
+ *
+ * @param $card_id
+ *   The local ID of the stored card data to load.
+ *
+ * @return
+ *   An array containing the specified card data or FALSE if the specified card
+ *   data does not exist.
+ */
+function commerce_cardonfile_data_load($card_id) {
+  return db_select('commerce_card_data', 'ccd')
+    ->fields('ccd')
+    ->condition('ccd.card_id', $card_id)
+    ->execute()
+    ->fetchAssoc();
+}
+
+/**
+ * Saves an array of card data.
+ *
+ * @param $card_data
+ *   An array of card data including the following keys:
+ *   - card_id: if present, saves an existing card data array, otherwise inserts
+ *     the card data in a new record
+ *   - uid: the user ID of the account the card data is being stored for
+ *   - payment_method: the name of the payment method the card was used for
+ *   - instance_id: the payment method instance ID containing the credentials
+ *     that will be used to reuse the card on file
+ *   - remote_id: the remote ID to the full card data at the payment gateway
+ *   - card_type: short name of the credit card type if determined, based on the
+ *     keys returned by commerce_payment_credit_card_types()
+ *   - card_name: the name of the cardholder
+ *   - card_number: the last 4 digits of the credit card number
+ *   - card_exp_month: the numeric representation of the expiration month
+ *   - card_exp_year: the four digit expiration year
+ *   - status: boolean indicating whether or not the card data is still valid
+ *
+ * @return
+ *   The operation performed by drupal_write_record() on save; since the card
+ *   data array is received by reference, it will contain the serial numeric
+ *   card_id used to represent the card data locally after an insert.
+ */
+function commerce_cardonfile_data_save(&$card_data) {
+  if (!empty($card_data['card_id']) && commerce_cardonfile_data_load($card_data['card_id'])) {
+    $card_data['changed'] = REQUEST_TIME;
+
+    return drupal_write_record('commerce_card_data', $card_data, 'card_id');
+  }
+  else {
+    $card_data['card_id'] = NULL;
+    $card_data['created'] = REQUEST_TIME;
+    $card_data['changed'] = REQUEST_TIME;
+
+    return drupal_write_record('commerce_card_data', $card_data);
+  }
+}
+
+/**
+ * Deletes stored card data by local ID.
+ *
+ * @param $card_id
+ *   The local ID of the card data to delete.
+ */
+function commerce_cardonfile_data_delete($card_id) {
+  db_delete('commerce_card_data')
+    ->condition($type, $id)
+    ->execute();
+}
