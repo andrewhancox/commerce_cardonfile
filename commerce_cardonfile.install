@@ -12,7 +12,7 @@
 function commerce_cardonfile_schema() {
   $schema = array();
 
-  $schema['commerce_cardonfile'] = array(
+  $schema['commerce_card_data'] = array(
     'description' => 'Stores truncated card data with references to the full card data stored at payment gateways.',
     'fields' => array(
       'card_id' => array(
@@ -77,7 +77,7 @@ function commerce_cardonfile_schema() {
       'card_exp_year' => array(
         'description' => 'Expiration year of the credit card.',
         'type' => 'int',
-        'size' => 'tiny',
+        'size' => 'small',
         'not null' => TRUE,
         'default' => 0,
       ),
@@ -104,6 +104,7 @@ function commerce_cardonfile_schema() {
     'primary key' => array('card_id'),
     'indexes' => array(
       'uid' => array('uid'),
+      'instance_id' => array('instance_id'),
     ),
     'foreign keys' => array(
       'owner' => array(
