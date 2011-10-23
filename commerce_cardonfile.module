@@ -8,6 +8,24 @@
 
 
 /**
+ * Implements hook_menu().
+ */
+function commerce_cardonfile_menu() {
+  $items = array();
+
+  $items['admin/commerce/config/cardonfile'] = array(
+    'title' => 'Card on file settings',
+    'description' => 'Configure your card on file settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_cardonfile_settings_form'),
+    'access arguments' => array('administer cardonfile'),
+    'file' => 'includes/commerce_cardonfile.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
  * Implements hook_form_alter().
  *
  * This implementation alters any checkout form looking for the payment pane
