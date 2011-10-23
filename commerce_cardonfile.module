@@ -8,6 +8,81 @@
 
 
 /**
+ * Implements hook_form_alter().
+ *
+ * This implementation alters any checkout form looking for the payment pane
+ * and seeing if its details are currently for a credit card payment method. If
+ * so, it adds the necessary form elements for Card on File payment, including a
+ * select element to use previously stored credit card information and a
+ * checkbox on the credit card data entry form to store the given credit card on
+ * file for future usage.
+ */
+function commerce_cardonfile_form_alter(&$form, &$form_state, $form_id) {
+  // If the current form ID is for a checkout form...
+  if (strpos($form_id, 'commerce_checkout_form_') === 0) {
+    // And it specifies a valid checkout page...
+    if (commerce_checkout_page_load(substr($form_id, 23))) {
+      // And the current page's form includes the payment checkout pane...
+      if (!empty($form['commerce_payment'])) {
+        // Check to see if the currently selected payment method is Card on File
+        // enabled (via the cardonfile boolean in its info array).
+        $payment_method = commerce_payment_method_instance_load($form['commerce_payment']['payment_method']['#default_value']);
+        $payment_method['cardonfile'] = TRUE;
+
+        if (!empty($payment_method['cardonfile']) && !empty($form['commerce_payment']['payment_details']['credit_card'])) {
+          // Add a checkbox to the credit card details container to store the
+          // credit card for future use.
+          $form['commerce_payment']['payment_details']['credit_card']['cardonfile_store'] = array(
+            '#type' => 'checkbox',
+            '#title' => t('Store this credit card on file for future use.'),
+            '#default_value' => variable_get('commerce_cardonfile_default_storage', FALSE),
+          );
+
+          // Load any existing card data for the current payment method instance
+          // and user.
+          $stored_cards = commerce_cardonfile_data_load_multiple($form_state['account']->uid, $payment_method['instance_id']);
+
+          if (!empty($stored_cards)) {
+            // Load the credit card helper functions from the Payment module.
+            module_load_include('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
+            $card_types = commerce_payment_credit_card_types();
+
+            // Build an options array of stored credit cards.
+            $options = array();
+
+            foreach ($stored_cards as $card_id => $card_data) {
+              $options[$card_id] = t('@type belonging to @name: Ends in @number, Expires @month/@year', array('@type' => $card_types[$card_data['card_type']], '@name' => $card_data['card_name'], '@number' => $card_data['card_number'], '@month' => $card_data['card_exp_month'], '@year' => $card_data['card_exp_year']));
+            }
+
+            // Add an option to use a new credit card.
+            $options['new'] = t('Use a different credit card');
+
+            // Show the options as a radio select list.
+            $form['commerce_payment']['payment_details']['cardonfile'] = array(
+              '#type' => 'radios',
+              '#title' => t('Select a stored credit card'),
+              '#options' => $options,
+              '#default_value' => key($options),
+              '#weight' => -10,
+              '#ajax' => array(
+                'callback' => 'commerce_payment_pane_checkout_form_details_refresh',
+                'wrapper' => 'payment-details',
+              ),
+            );
+
+            // If the current value for the card selection element is not to use
+            // a different credit card, then hide the credit card form elements.
+            if ($form_state['values']['commerce_payment']['payment_details']['cardonfile'] !== 'new') {
+              $form['commerce_payment']['payment_details']['credit_card']['#access'] = FALSE;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
  * Loads stored card data by ID.
  *
  * @param $card_id
@@ -23,6 +98,37 @@ function commerce_cardonfile_data_load($card_id) {
     ->condition('ccd.card_id', $card_id)
     ->execute()
     ->fetchAssoc();
+}
+
+/**
+ * Loads stored card data for a user by payment method instance.
+ *
+ * @param $uid
+ *   The user ID of the user whose card data should be loaded.
+ * @param $instance_id
+ *   The payment method instance ID to load card data for.
+ * @param $active
+ *   Boolean indicating whether or not to only return active card data; defaults
+ *   to TRUE.
+ *
+ * @return
+ *   An associative array of all applicable card data keyed by card_id or an
+ *   empty array if no matching data exists.
+ */
+function commerce_cardonfile_data_load_multiple($uid, $instance_id, $active = TRUE) {
+  $query = db_select('commerce_card_data', 'ccd')
+    ->fields('ccd')
+    ->condition('ccd.uid', $uid)
+    ->condition('ccd.instance_id', $instance_id);
+
+  if ($active) {
+    $query
+      ->condition('ccd.status', 1);
+  }
+
+  return $query
+    ->execute()
+    ->fetchAllAssoc('card_id', PDO::FETCH_ASSOC);
 }
 
 /**
