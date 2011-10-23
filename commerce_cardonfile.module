@@ -60,24 +60,13 @@ function commerce_cardonfile_form_alter(&$form, &$form_state, $form_id) {
           // and user.
           $stored_cards = commerce_cardonfile_data_load_multiple($form_state['account']->uid, $payment_method['instance_id']);
 
+          // If we found any stored cards, show the options in the form.
           if (!empty($stored_cards)) {
-            // Load the credit card helper functions from the Payment module.
-            module_load_include('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
-            $card_types = commerce_payment_credit_card_types();
+            $element = variable_get('commerce_cardonfile_selector', 'radios');
+            $options = commerce_cardonfile_options_list($stored_cards, $element);
 
-            // Build an options array of stored credit cards.
-            $options = array();
-
-            foreach ($stored_cards as $card_id => $card_data) {
-              $options[$card_id] = t('@type belonging to @name: Ends in @number, Expires @month/@year', array('@type' => $card_types[$card_data['card_type']], '@name' => $card_data['card_name'], '@number' => $card_data['card_number'], '@month' => $card_data['card_exp_month'], '@year' => $card_data['card_exp_year']));
-            }
-
-            // Add an option to use a new credit card.
-            $options['new'] = t('Use a different credit card');
-
-            // Show the options as a radio select list.
             $form['commerce_payment']['payment_details']['cardonfile'] = array(
-              '#type' => 'radios',
+              '#type' => $element,
               '#title' => t('Select a stored credit card'),
               '#options' => $options,
               '#default_value' => key($options),
@@ -98,6 +87,50 @@ function commerce_cardonfile_form_alter(&$form, &$form_state, $form_id) {
       }
     }
   }
+}
+
+/**
+ * Returns an options array for selecting a card on file or choosing to use a
+ * different credit card.
+ *
+ * @param $stored_cards
+ *   An array of stored card data arrays keyed by card_id.
+ * @param $element
+ *   The form element the options array will be for, 'radios' or 'select'.
+ * @param $different
+ *   Add an option to use a different credit card.
+ *
+ * @return
+ *   An options array for selecting a card on file.
+ */
+function commerce_cardonfile_options_list($stored_cards, $element = 'radios', $different = TRUE) {
+  // Load the credit card helper functions from the Payment module.
+  module_load_include('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
+  $card_types = commerce_payment_credit_card_types();
+
+  // Build an options array of stored credit cards.
+  $options = array();
+
+  foreach ($stored_cards as $card_id => $card_data) {
+    $replacement = array('@type' => $card_types[$card_data['card_type']], '@name' => $card_data['card_name'], '@number' => $card_data['card_number'], '@month' => str_pad($card_data['card_exp_month'], 2, '0', STR_PAD_LEFT), '@year' => $card_data['card_exp_year']);
+
+    // Use a longer format for radio button options.
+    if ($element == 'radios') {
+      $label = t('@type belonging to @name: Ends in @number, Expires @month/@year', $replacement);
+    }
+    else {
+      $label = t('@type ending in @number, Exp. @month/@year', $replacement);
+    }
+
+    $options[$card_id] = $label;
+  }
+
+  // Add an option to use a different credit card if specified.
+  if ($different) {
+    $options['new'] = t('Use a different credit card');
+  }
+
+  return $options;
 }
 
 /**
