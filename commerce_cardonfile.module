@@ -50,11 +50,21 @@ function commerce_cardonfile_form_alter(&$form, &$form_state, $form_id) {
         if (!empty($payment_method['cardonfile']) && !empty($form['commerce_payment']['payment_details']['credit_card'])) {
           // Add a checkbox to the credit card details container to store the
           // credit card for future use.
-          $form['commerce_payment']['payment_details']['credit_card']['cardonfile_store'] = array(
-            '#type' => 'checkbox',
-            '#title' => t('Store this credit card on file for future use.'),
-            '#default_value' => variable_get('commerce_cardonfile_default_storage', FALSE),
-          );
+          $storage = variable_get('commerce_cardonfile_storage', 'opt-in');
+
+          if (in_array($storage, array('opt-in', 'opt-out'))) {
+            $form['commerce_payment']['payment_details']['credit_card']['cardonfile_store'] = array(
+              '#type' => 'checkbox',
+              '#title' => t('Store this credit card on file for future use.'),
+              '#default_value' => $storage == 'opt-out',
+            );
+          }
+          else {
+            $form['commerce_payment']['payment_details']['credit_card']['cardonfile_store'] = array(
+              '#type' => 'value',
+              '#value' => TRUE,
+            );
+          }
 
           // Load any existing card data for the current payment method instance
           // and user.
@@ -79,8 +89,15 @@ function commerce_cardonfile_form_alter(&$form, &$form_state, $form_id) {
 
             // If the current value for the card selection element is not to use
             // a different credit card, then hide the credit card form elements.
-            if ($form_state['values']['commerce_payment']['payment_details']['cardonfile'] !== 'new') {
+            if (empty($form_state['values']) || $form_state['values']['commerce_payment']['payment_details']['cardonfile'] !== 'new') {
               $form['commerce_payment']['payment_details']['credit_card']['#access'] = FALSE;
+            }
+
+            // Add the CSS to hide a sole credit card icon if specified.
+            if (variable_get('commerce_cardonfile_hide_cc_radio_button', TRUE)) {
+              if (count($form['commerce_payment']['payment_method']['#options']) == 1) {
+                $form['commerce_payment']['payment_method']['#attached']['css'][] = drupal_get_path('module', 'commerce_cardonfile') . '/theme/commerce_cardonfile.checkout.css';
+              }
             }
           }
         }

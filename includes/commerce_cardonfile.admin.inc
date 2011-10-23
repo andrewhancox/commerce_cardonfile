@@ -41,7 +41,7 @@ function commerce_cardonfile_settings_form($form, &$form_state) {
 
   $form['commerce_cardonfile_hide_cc_radio_button'] = array(
     '#type' => 'checkbox',
-    '#title' => t('If credit card is the only available payment method, hide its radio button.'),
+    '#title' => t('If credit card is the only available payment method, hide its radio button if the customer has a card on file.'),
     '#default_value' => variable_get('commerce_cardonfile_hide_cc_radio_button', TRUE),
   );
 
