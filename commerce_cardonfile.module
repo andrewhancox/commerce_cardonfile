@@ -35,10 +35,23 @@ function commerce_cardonfile_menu() {
   );
 
   $items['user/%user/stored-payment-methods/%commerce_cardonfile_data'] = array(
+    'title' => 'Credit card',
     'page callback' => 'commerce_cardonfile_redirect_to_user',
     'page arguments' => array(1),
     'access callback' => 'commerce_cardonfile_data_access',
     'access arguments' => array(3),
+  );
+
+  $items['user/%user/stored-payment-methods/%commerce_cardonfile_data/update'] = array(
+    'title' => 'Update',
+    'description' => 'Update a stored payment method.',
+    'page callback' => 'commerce_cardonfile_update',
+    'page arguments' => array(3),
+    'access callback' => 'commerce_cardonfile_data_access',
+    'access arguments' => array(3),
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_INLINE,
+    'file' => 'includes/commerce_cardonfile.pages.inc',
   );
 
   $items['user/%user/stored-payment-methods/%commerce_cardonfile_data/delete'] = array(
@@ -169,9 +182,9 @@ function theme_card_data_overview($variables) {
   // Build an array of data lines to include in the overview.
   $lines = array(
     t('Type:') => $card_type,
+    t('Cardholder name:') => check_plain($card_data['card_name']),
     t('Number (last 4):') => '******' . check_plain($card_data['card_number']),
     t('Expiration date:') => check_plain($card_data['card_exp_month'] . '/' . $card_data['card_exp_year']),
-    t('Cardholder name:') => check_plain($card_data['card_name']),
   );
 
   $output = '';
