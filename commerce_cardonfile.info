@@ -9,3 +9,6 @@ core = 7.x
 
 ; Simple tests
 ; files[] = tests/commerce_cardonfile.test
+
+; Module includes
+files[] = includes/commerce_cardonfile_data.controller.inc

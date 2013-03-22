@@ -10,34 +10,7 @@
  * Displays the card data overview for the "Stored payment methods" account tab.
  */
 function commerce_cardonfile_overview($account) {
-  // Load the specified account's stored card data.
-  $stored_cards = commerce_cardonfile_data_load_multiple($account->uid);
 
-  $header = array(
-    t('Payment method'),
-    t('Operations'),
-  );
-
-  // Build a table rows array of stored card data.
-  $rows = array();
-
-  foreach ($stored_cards as $card_id => $card_data) {
-    // Build the operation links for the current card.
-    $links = menu_contextual_links('commerce-card-data', 'user/' . $account->uid . '/stored-payment-methods', array($card_id));
-
-    // Add the card's row to the table's rows array.
-    $rows[] = array(
-      theme('card_data_overview', array('card_data' => $card_data)),
-      theme('links', array('links' => $links, 'attributes' => array('class' => 'commerce-card-data links inline operations'))),
-    );
-  }
-
-  // Add an empty message in case the tab got rendered without stored cards.
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('You do not have any stored payment methods.'), 'colspan' => 2));
-  }
-
-  return theme('table', array('header' => $header, 'rows' => $rows));
 }
 
 /**
@@ -141,7 +114,7 @@ function commerce_cardonfile_update_form_submit($form, &$form_state) {
   drupal_set_message(t('The stored card data has been updated.'));
 
   // Redirect to the payment methods tab if the user has other stored payment.
-  $stored_cards = commerce_cardonfile_data_load_multiple($card_data['uid']);
+  $stored_cards = commerce_cardonfile_data_load_multiple_by_uid($card_data['uid']);
 
   if (!empty($stored_cards)) {
     $form_state['redirect'] = 'user/' . $card_data['uid'] . '/stored-payment-methods';
@@ -199,7 +172,7 @@ function commerce_cardonfile_delete_form_submit($form, &$form_state) {
   drupal_set_message(t('The stored card data has been deleted.'));
 
   // Redirect to the payment methods tab if the user has other stored payment.
-  $stored_cards = commerce_cardonfile_data_load_multiple($card_data['uid']);
+  $stored_cards = commerce_cardonfile_data_load_multiple_by_uid($card_data['uid']);
 
   if (!empty($stored_cards)) {
     $form_state['redirect'] = 'user/' . $card_data['uid'] . '/stored-payment-methods';
