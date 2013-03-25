@@ -16,7 +16,7 @@ function commerce_cardonfile_rules_data_info() {
       'wrap' => TRUE,
       'wrapper class' => 'EntityStructureWrapper',
       'token type' => 'commerce-cardonfile-card-data',
-      //'property info' => commerce_cardonfile_data_property_info_callback(),
+      //'property info' => commerce_cardonfile_property_info_callback(),
     ),
     'commerce_cardonfile_process_card_response' => array(
       'label' => t('process card response'),
@@ -35,10 +35,10 @@ function commerce_cardonfile_rules_data_info() {
 function commerce_cardonfile_rules_event_info() {
   $events = array();
 
-  $events['commerce_cardonfile_data_insert'] = array(
+  $events['commerce_cardonfile_insert'] = array(
     'label' => t('After saving a new card on file'),
     'group' => t('Commerce Card on File'),
-    'access callback' => 'commerce_cardonfile_data_rules_access',
+    'access callback' => 'commerce_cardonfile_rules_access',
     'variables' => array(
       'card_data' => array(
         'type' => 'commerce_cardonfile_card_data',
@@ -47,10 +47,10 @@ function commerce_cardonfile_rules_event_info() {
     ),
   );
 
-  $events['commerce_cardonfile_data_update'] = array(
+  $events['commerce_cardonfile_update'] = array(
     'label' => t('After updating an existing card on file'),
     'group' => t('Commerce Card on File'),
-    'access callback' => 'commerce_cardonfile_data_rules_access',
+    'access callback' => 'commerce_cardonfile_rules_access',
     'variables' => array(
       'card_data' => array(
         'type' => 'commerce_cardonfile_card_data',
@@ -63,10 +63,10 @@ function commerce_cardonfile_rules_event_info() {
     ),
   );
 
-  $events['commerce_cardonfile_data_disable'] = array(
+  $events['commerce_cardonfile_disable'] = array(
     'label' => t('After disabling a card on file'),
     'group' => t('Commerce Card on File'),
-    'access callback' => 'commerce_cardonfile_data_rules_access',
+    'access callback' => 'commerce_cardonfile_rules_access',
     'variables' => array(
       'card_data' => array(
         'type' => 'commerce_cardonfile_card_data',
@@ -79,10 +79,10 @@ function commerce_cardonfile_rules_event_info() {
     ),
   );
 
-  $events['commerce_cardonfile_data_delete'] = array(
+  $events['commerce_cardonfile_delete'] = array(
     'label' => t('After deleting a card on file database record'),
     'group' => t('Commerce Card on File'),
-    'access callback' => 'commerce_cardonfile_data_rules_access',
+    'access callback' => 'commerce_cardonfile_rules_access',
     'variables' => array(
       'card_data' => array(
         'type' => 'commerce_cardonfile_card_data',
@@ -224,7 +224,7 @@ function commerce_cardonfile_rules_payment_instance_process_options_list() {
 function commerce_cardonfile_rules_action_order_process_card($order, $charge = NULL, $card_data = NULL, $forced_instance_id = NULL) {
 
   if (!isset($card_data)) {
-    $card_datas = commerce_cardonfile_data_load_user_default_cards($order->uid);
+    $card_datas = commerce_cardonfile_load_user_default_cards($order->uid);
     $card_data = $card_datas[1];
   }
 

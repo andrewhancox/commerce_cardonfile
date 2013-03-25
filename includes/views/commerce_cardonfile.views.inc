@@ -12,8 +12,8 @@ function commerce_cardonfile_views_data() {
   $data = array();
 
   // Base table setup.
-  $data['commerce_card_data']['table']['group']  = t('Commerce Card on File');
-  $data['commerce_card_data']['table']['base'] = array(
+  $data['commerce_cardonfile']['table']['group']  = t('Commerce Card on File');
+  $data['commerce_cardonfile']['table']['base'] = array(
     'field' => 'id',
     'title' => t('Commerce Card on File'),
     'help' => t('Saves information about each saved card data.'),
@@ -22,7 +22,7 @@ function commerce_cardonfile_views_data() {
   // For other base tables, explain how we join
   // 'left_field' is the primary key in the referenced table.
   // 'field' is the foreign key in this table.
-  $data['commerce_card_data']['table']['join'] = array(
+  $data['commerce_cardonfile']['table']['join'] = array(
     'users' => array(
       'left_field' => 'uid',
       'field' => 'uid',
@@ -30,7 +30,7 @@ function commerce_cardonfile_views_data() {
   );
 
   // Card ID.
-  $data['commerce_card_data']['card_id'] = array(
+  $data['commerce_cardonfile']['card_id'] = array(
     'title' => t('Card ID'),
     'help' => t('The unique internal identifier of the card data.'),
     'field' => array(
@@ -48,14 +48,14 @@ function commerce_cardonfile_views_data() {
     ),
     'relationship' => array(
       'handler' => 'views_handler_relationship',
-      'base' => 'commerce_card_data',
+      'base' => 'commerce_cardonfile',
       'field' => 'card_id',
       'label' => t('Card Data', array(), array('context' => 'credit card data')),
     ),
   );
 
   // Card owner uid.
-  $data['commerce_card_data']['uid'] = array(
+  $data['commerce_cardonfile']['uid'] = array(
     'title' => t('Uid'),
     'help' => t("The owner's user ID."),
     'field' => array(
@@ -85,7 +85,7 @@ function commerce_cardonfile_views_data() {
   );
 
   // Card payment method.
-  $data['commerce_card_data']['payment_method'] = array(
+  $data['commerce_cardonfile']['payment_method'] = array(
     'title' => t('Payment method'),
     'help' => t('The payment method related to this card.'),
     'field' => array(
@@ -104,7 +104,7 @@ function commerce_cardonfile_views_data() {
   );
 
   // Card instance id.
-  $data['commerce_card_data']['instance_id'] = array(
+  $data['commerce_cardonfile']['instance_id'] = array(
     'title' => t('Payment method instance ID'),
     'help' => t('The payment method instance ID related to this card.'),
     'field' => array(
@@ -123,7 +123,7 @@ function commerce_cardonfile_views_data() {
   );
 
   // Card remote id.
-  $data['commerce_card_data']['remote_id'] = array(
+  $data['commerce_cardonfile']['remote_id'] = array(
     'title' => t('Card data remote ID'),
     'help' => t('The remote ID to the full card data at the payment gateway.'),
     'field' => array(
@@ -142,7 +142,7 @@ function commerce_cardonfile_views_data() {
   );
 
   // Card card_type.
-  $data['commerce_card_data']['card_type'] = array(
+  $data['commerce_cardonfile']['card_type'] = array(
     'title' => t('Card type'),
     'help' => t('The credit card type.'),
     'field' => array(
@@ -161,7 +161,7 @@ function commerce_cardonfile_views_data() {
   );
 
   // Card card_name.
-  $data['commerce_card_data']['card_name'] = array(
+  $data['commerce_cardonfile']['card_name'] = array(
     'title' => t('Name on the card'),
     'help' => t('The name on the credit card.'),
     'field' => array(
@@ -180,7 +180,7 @@ function commerce_cardonfile_views_data() {
   );
 
   // Card card_number.
-  $data['commerce_card_data']['card_number'] = array(
+  $data['commerce_cardonfile']['card_number'] = array(
     'title' => t('Card number'),
     'help' => t('Truncated number of the credit card (last 4 digits).'),
     'field' => array(
@@ -199,7 +199,7 @@ function commerce_cardonfile_views_data() {
   );
 
   // Card expiration month.
-  $data['commerce_card_data']['card_exp_month'] = array(
+  $data['commerce_cardonfile']['card_exp_month'] = array(
     'title' => t('Card expiration month'),
     'help' => t('Expiration month of the credit card.'),
     'field' => array(
@@ -218,7 +218,7 @@ function commerce_cardonfile_views_data() {
   );
 
   // Card expiration year.
-  $data['commerce_card_data']['card_exp_year'] = array(
+  $data['commerce_cardonfile']['card_exp_year'] = array(
     'title' => t('Card expiration year'),
     'help' => t('Expiration year of the credit card.'),
     'field' => array(
@@ -237,7 +237,7 @@ function commerce_cardonfile_views_data() {
   );
 
   // Card status.
-  $data['commerce_card_data']['status'] = array(
+  $data['commerce_cardonfile']['status'] = array(
     'title' => t('Card data status'),
     'help' => t('Status of the card data storage.'),
     'field' => array(
@@ -256,7 +256,7 @@ function commerce_cardonfile_views_data() {
   );
 
   // Card created timestamp.
-  $data['commerce_card_data']['created'] = array(
+  $data['commerce_cardonfile']['created'] = array(
     'title' => t('Created'),
     'help' => t('The date when this card was created.'),
     'field' => array(
@@ -272,7 +272,7 @@ function commerce_cardonfile_views_data() {
   );
 
   // Card created timestamp.
-  $data['commerce_card_data']['changed'] = array(
+  $data['commerce_cardonfile']['changed'] = array(
     'title' => t('Changed'),
     'help' => t('The date when this card was changed.'),
     'field' => array(
@@ -288,7 +288,7 @@ function commerce_cardonfile_views_data() {
   );
 
   // Default card.
-  $data['commerce_card_data']['instance_default'] = array(
+  $data['commerce_cardonfile']['instance_default'] = array(
     'title' => t('Default card'),
     'help' => t('Whether or not this is the default card for the Payment Instance ID.'),
     'field' => array(
@@ -309,7 +309,7 @@ function commerce_cardonfile_views_data() {
   );
 
   // Operation links.
-  $data['commerce_card_data']['operations'] = array(
+  $data['commerce_cardonfile']['operations'] = array(
     'field' => array(
       'title' => t('Operations links'),
       'help' => t('Display all the available operations links for the cards.'),

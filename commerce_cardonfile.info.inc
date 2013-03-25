@@ -12,7 +12,7 @@ function commerce_cardonfile_entity_property_info() {
   $info = array();
 
   // Add meta-data about the basic commerce_product properties.
-  $properties = &$info['commerce_cardonfile_data']['properties'];
+  $properties = &$info['commerce_cardonfile']['properties'];
 
   $properties['payment_method'] = array(
     'label' => t('Payment Method'),

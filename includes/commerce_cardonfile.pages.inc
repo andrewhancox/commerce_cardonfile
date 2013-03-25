@@ -63,7 +63,7 @@ function commerce_cardonfile_update_form($form, &$form_state, $card_data) {
  * Form validate handler: update stored card data.
  */
 function commerce_cardonfile_update_form_validate($form, &$form_state) {
-  module_load_include ('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
+  module_load_include('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
   // Ensure non-default values are valid numbers.
   if ($form_state['values']['credit_card']['number'] != $form['credit_card']['number']['#default_value']) {
     if (!commerce_payment_validate_credit_card_number($form_state['values']['credit_card']['number'])) {
@@ -109,15 +109,15 @@ function commerce_cardonfile_update_form_submit($form, &$form_state) {
     }
   }
 
-  commerce_cardonfile_data_save($card_data);
+  commerce_cardonfile_save($card_data);
 
   drupal_set_message(t('The stored card data has been updated.'));
 
   // Redirect to the payment methods tab if the user has other stored payment.
-  $stored_cards = commerce_cardonfile_data_load_multiple_by_uid($card_data['uid']);
+  $stored_cards = commerce_cardonfile_load_multiple_by_uid($card_data['uid']);
 
   if (!empty($stored_cards)) {
-    $form_state['redirect'] = 'user/' . $card_data['uid'] . '/stored-payment-methods';
+    $form_state['redirect'] = 'user/' . $card_data['uid'] . '/cards';
   }
   else {
     $form_state['redirect'] = 'user/' . $card_data['uid'];
@@ -139,7 +139,7 @@ function commerce_cardonfile_delete_form($form, &$form_state, $card_data) {
   return confirm_form(
     $form,
     t('Are you sure you want to delete this card data?'),
-    'user/' . $card_data['uid'] . '/stored-payment-methods',
+    'user/' . $card_data['uid'] . '/cards',
     theme('card_data_overview', array('card_data' => $card_data)),
     t('Delete')
   );
@@ -160,22 +160,22 @@ function commerce_cardonfile_delete_form_submit($form, &$form_state) {
       // Display a message if we failed to communicate properly with the payment
       // gateway in the Card on File delete callback.
       drupal_set_message(t('We encountered an error attempting to delete your card data. Please try again and contact us if this error persists.'), 'error');
-      $form_state['redirect'] = 'user/' . $card_data['uid'] . '/stored-payment-methods';
+      $form_state['redirect'] = 'user/' . $card_data['uid'] . '/cards';
       return;
     }
   }
 
   // Disable the card data but retain the record.
   $card_data['status'] = 0;
-  commerce_cardonfile_data_save($card_data);
+  commerce_cardonfile_save($card_data);
 
   drupal_set_message(t('The stored card data has been deleted.'));
 
   // Redirect to the payment methods tab if the user has other stored payment.
-  $stored_cards = commerce_cardonfile_data_load_multiple_by_uid($card_data['uid']);
+  $stored_cards = commerce_cardonfile_load_multiple_by_uid($card_data['uid']);
 
   if (!empty($stored_cards)) {
-    $form_state['redirect'] = 'user/' . $card_data['uid'] . '/stored-payment-methods';
+    $form_state['redirect'] = 'user/' . $card_data['uid'] . '/cards';
   }
   else {
     $form_state['redirect'] = 'user/' . $card_data['uid'];

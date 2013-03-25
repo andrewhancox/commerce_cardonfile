@@ -5,7 +5,7 @@
  */
 class commerce_cardonfile_handler_field_card_status extends views_handler_field {
   function render($values) {
-    $statuses = commerce_cardonfile_data_statuses();
+    $statuses = commerce_cardonfile_statuses();
     $value = $this->get_value($values);
     if (!empty($statuses[$value])) {
       return $this->sanitize_value($statuses[$value]);
