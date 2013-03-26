@@ -39,7 +39,7 @@ function commerce_cardonfile_menu() {
     'weight' => -10,
   );
 
-  $items['user/%user/stored-payment-methods/%commerce_cardonfile'] = array(
+  $items['user/%user/card/%commerce_cardonfile'] = array(
     'title' => 'Credit card',
     'page callback' => 'commerce_cardonfile_redirect_to_user',
     'page arguments' => array(1),
@@ -60,12 +60,12 @@ function commerce_cardonfile_menu() {
         'instance_id' => $instance_id,
         'payment_method' => $payment_method['method_id'],
       ));
-      $items['user/%user/stored-payment-methods/add/' . drupal_hash_base64($instance_id)] = array(
+      $items['user/%user/card/add/' . drupal_hash_base64($instance_id)] = array(
         'title' => 'Add a !name',
         'title arguments' => array('!name' => $payment_method['display_title']),
         'page callback' => 'commerce_cardonfile_create_page',
         'page arguments' => array($new_card_data, 1),
-        'access callback' => 'commerce_cardonfile_data_access',
+        'access callback' => 'commerce_cardonfile_access',
         'access arguments' => array('create', $new_card_data, 1),
         'type' => MENU_LOCAL_ACTION,
         'file' => 'includes/commerce_cardonfile.pages.inc',
@@ -73,25 +73,25 @@ function commerce_cardonfile_menu() {
     }
   }
 
-  $items['user/%user/cards/%commerce_cardonfile/edit'] = array(
+  $items['user/%user/card/%commerce_cardonfile/edit'] = array(
     'title' => 'Edit',
     'description' => 'Update a stored payment method.',
     'page callback' => 'commerce_cardonfile_update',
     'page arguments' => array(3),
     'access callback' => 'commerce_cardonfile_access',
-    'access arguments' => array(3),
+    'access arguments' => array('update', 3),
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_INLINE,
     'file' => 'includes/commerce_cardonfile.pages.inc',
   );
 
-  $items['user/%user/stored-payment-methods/%commerce_cardonfile_data/delete'] = array(
+  $items['user/%user/card/%commerce_cardonfile/delete'] = array(
     'title' => 'Delete',
     'description' => 'Delete a stored payment method.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('commerce_cardonfile_delete_form', 3),
-    'access callback' => 'commerce_cardonfile_data_access',
-    'access arguments' => array('delete', 3, 1),
+    'access callback' => 'commerce_cardonfile_access',
+    'access arguments' => array('delete', 3),
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_INLINE,
     'weight' => 5,
@@ -99,15 +99,6 @@ function commerce_cardonfile_menu() {
   );
 
   return $items;
-}
-
-/**
- * Implements hook_menu_alter().
- */
-function commerce_cardonfile_menu_alter(&$items) {
-  // Transform the field UI tabs into contextual links.
-  $items['admin/commerce/config/cardonfile/settings/fields']['context'] = MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE;
-  $items['admin/commerce/config/cardonfile/settings/display']['context'] = MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE;
 }
 
 /**
@@ -122,6 +113,7 @@ function commerce_cardonfile_entity_info() {
     'controller class' => 'EntityAPIController',
     'views controller class' => 'EntityDefaultViewsController',
     'base table' => 'commerce_cardonfile',
+    'locking mode' => 'pessimistic',
     'fieldable' => TRUE,
     'entity keys' => array(
       'id' => 'card_id',
@@ -132,7 +124,6 @@ function commerce_cardonfile_entity_info() {
         'label' => t('Card on File'),
         'admin' => array(
           'path' => 'admin/commerce/config/cardonfile',
-          'real path' => 'admin/commerce/config/cardonfile',
           'access arguments' => array('configure cardonfile'),
         ),
       ),
@@ -150,7 +141,6 @@ function commerce_cardonfile_entity_info() {
     ),
     'admin' => array(
       'path' => 'admin/commerce/config/cardonfile',
-      'real path' => 'admin/commerce/config/cardonfile',
       'access arguments' => array('configure cardonfile'),
     ),
     'access callback' => 'commerce_cardonfile_access',
@@ -211,9 +201,33 @@ function commerce_cardonfile_permission() {
       'description' => t("Access and update any user's stored card data."),
       'restrict access' => TRUE,
     ),
-    'manage own card data' => array(
-      'title' => t('Manage own card data'),
-      'description' => t('Manage your own stored card data via a tab on your user account page.'),
+    'view any card data' => array(
+      'title' => t('View any card data'),
+      'restrict access' => TRUE,
+    ),
+    'view own card data' => array(
+      'title' => t('View own card data'),
+    ),
+    'create any card data' => array(
+      'title' => t('Create any card data'),
+      'restrict access' => TRUE,
+    ),
+    'create own card data' => array(
+      'title' => t('Create own card data'),
+    ),
+    'edit any card data' => array(
+      'title' => t('Edit any card data'),
+      'restrict access' => TRUE,
+    ),
+    'edit own card data' => array(
+      'title' => t('Edit own card data'),
+    ),
+    'delete any card data' => array(
+      'title' => t('Delete any card data'),
+      'restrict access' => TRUE,
+    ),
+    'delete own card data' => array(
+      'title' => t('Delete own card data'),
     ),
   );
 }
@@ -227,40 +241,28 @@ function commerce_cardonfile_permission() {
  *   'create' or 'delete'.
  * @param $card_data
  *   The card data array
- * @param $owner
- *   The user account for the card owner
+ * @param $account
+ *   The user account for the card access
  *
  * @return
  *   TRUE if the current user has access
  */
-function commerce_cardonfile_access($op = 'view', $card_data = array(), $owner = NULL) {
+function commerce_cardonfile_access($op = 'view', $card_data = NULL, $account = NULL) {
   global $user;
+
+  $account = isset($account) ? $account : $user;
 
   // resolve operation
   if ($op == 'manage' || $op == 'update') {
     $op = 'edit';
   }
 
-  // DENY if invalid operation
-  if (!in_array($op, array('view', 'edit', 'create', 'delete'))) {
-    return FALSE;
-  }
-
-  // resolve owner uid
-  $owner_uid = NULL;
-  if (!empty($card_data['uid'])) {
-    $owner_uid = $card_data['uid'];
-  }
-  elseif (!empty($owner->uid)) {
-    $owner_uid = $owner->uid;
-  }
-
   // load payment method instance and rule
   $payment_method = array();
   $payment_rule = NULL;
 
-  if (!empty($card_data['instance_id'])) {
-    $payment_method = commerce_payment_method_instance_load($card_data['instance_id']);
+  if (!empty($card_data->instance_id)) {
+    $payment_method = commerce_payment_method_instance_load($card_data->instance_id);
     if (!empty($payment_method)) {
       // Explode the method key into its component parts.
       list($payment_method_id, $instance_rule_name) = explode('|', $payment_method['instance_id']);
@@ -275,6 +277,7 @@ function commerce_cardonfile_access($op = 'view', $card_data = array(), $owner =
 
   // Operation specific access checks
   $op_callback = TRUE;
+
   switch ($op) {
     case 'edit':
       // set operation callback
@@ -301,14 +304,14 @@ function commerce_cardonfile_access($op = 'view', $card_data = array(), $owner =
       break;
   }
 
-  // DENY if callback does NOT exist for specific operations
-  if (empty($op_callback)) {
-    return FALSE;
-  }
-
   // ALLOW access for any user with administer permission.
   if (user_access('administer card data') || user_access("$op any card data")) {
     return TRUE;
+  }
+
+  // DENY if callback does NOT exist for specific operations
+  if (empty($op_callback)) {
+    return FALSE;
   }
 
   // ALLOW access for users with permission to manage their own card data.
@@ -375,7 +378,7 @@ function commerce_cardonfile_user_access($account) {
  * Redirects from a would be card data page to the user's stored payment methods tab.
  */
 function commerce_cardonfile_redirect_to_user($account) {
-  drupal_goto('user/' . $account->uid . '/stored-payment-methods');
+  drupal_goto('user/' . $account->uid . '/cards');
 }
 
 /**
@@ -446,11 +449,7 @@ function commerce_cardonfile_form_alter(&$form, &$form_state, $form_id) {
   }
 
   // Load existing active cards for the payment method instance and user.
-  $stored_cards = commerce_cardonfile_load_multiple(array(), array(
-    'uid' => $form_state['account']->uid,
-    'instance_id' => $payment_method['instance_id'],
-    'status' => 1,
-  ));
+  $stored_cards = commerce_cardonfile_load_multiple_by_uid($form_state['account']->uid, $payment_method['instance_id']);
 
   // Build options form
   $cardonfile_options_form = array();
@@ -458,7 +457,7 @@ function commerce_cardonfile_form_alter(&$form, &$form_state, $form_id) {
 
   // If have stored cards ...
   if (!empty($stored_cards)) {
-    $valid_cards = array_filter($stored_cards, 'commerce_cardonfile_check_expiration');
+    $valid_cards = array_filter($stored_cards, 'commerce_cardonfile_validate_card_expiration');
 
     // If have un-expired cards ...
     if (!empty($valid_cards)) {
@@ -483,7 +482,7 @@ function commerce_cardonfile_form_alter(&$form, &$form_state, $form_id) {
       // create options element
       $cardonfile_options_form = array(
         '#type' => $card_option_element_type,
-        '#title' => t('Select a stored credit card'),
+        '#title' => t('Select a stored card'),
         '#options' => $card_options,
         '#default_value' => $card_options_default_value,
         '#weight' => -10,
@@ -601,9 +600,6 @@ function commerce_cardonfile_commerce_checkout_form_submit($form, &$form_state) 
       commerce_cardonfile_set_default_card($card_id_selected);
     }
 
-    // Save card id to the order reference field
-    $order_wrapper->commerce_cardonfile = array('card_id' => $card_id_selected);
-    $order_wrapper->save();
   }
 }
 
@@ -624,8 +620,19 @@ function commerce_cardonfile_element_options_list($stored_cards, $element_type =
   // Build an options array of stored credit cards.
   $options = array();
 
+  // Load the credit card helper functions from the Payment module.
+  commerce_cardonfile_load_credit_card_helpers();
+  $card_types = commerce_payment_credit_card_types();
+
   foreach ($stored_cards as $card_id => $card_data) {
-    $options[$card_id] = theme('commerce_cardonfile_label', array('card_data' => $card_data));
+    $replacements = array(
+      '@card_type' => !empty($card_types[$card_data->card_type]) ? $card_types[$card_data->card_type] : $card_data->card_type,
+      '@card_number' => $card_data->card_number,
+      '@card_exp_month' => str_pad($card_data->card_exp_month, 2, '0', STR_PAD_LEFT),
+      '@card_exp_year' => $card_data->card_exp_year,
+      '@instance_default' => !empty($card_data->instance_default) ? t('(default)') : '',
+      );
+    $options[$card_id] = t('@card_type ending @card_number, Expires @card_exp_month/@card_exp_year @instance_default', $replacements);;
   }
 
   // Add an option to use a different credit card if specified.
@@ -647,8 +654,7 @@ function commerce_cardonfile_element_options_list($stored_cards, $element_type =
  *   data does not exist.
  */
 function commerce_cardonfile_load($card_id) {
-  $cards = entity_load('commerce_cardonfile', array($card_id), array());
-  return $cards ? reset($cards) : FALSE;
+  return entity_load_single('commerce_cardonfile', $card_id);
 }
 
 /**
@@ -656,32 +662,39 @@ function commerce_cardonfile_load($card_id) {
  *
  * @param $card_ids
  *   An array of card ids to load
- * @param $conditions
- *   An array of conditions on the {commerce_payment_transaction} table in the
- *     form 'field' => $value.
  * @param $reset
  *   Whether to reset the internal transaction loading cache.
  *
  * @return
- *   An associative array of all applicable card data keyed by card_id or an
- *   empty array if no matching data exists.
+ *   The cardonfile entities
  */
-function commerce_cardonfile_load_multiple($card_ids = array(), $conditions = array(), $reset = FALSE) {
-  return entity_load('commerce_cardonfile', $card_ids, $conditions, $reset);
+function commerce_cardonfile_load_multiple($card_ids = array(), $reset = FALSE) {
+  return entity_load('commerce_cardonfile', $card_ids, array(), $reset);
 }
 
 function commerce_cardonfile_load_multiple_by_uid($uid, $instance_id = NULL, $active = TRUE) {
-  $conditions = array('uid' => $uid);
+
+  $return = array();
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'commerce_cardonfile')
+  ->propertyCondition('uid', $uid);
 
   if (!empty($instance_id)) {
-    $conditions['instance_id'] = $instance_id;
+    $query->propertyCondition('instance_id', $instance_id);
   }
 
   if ($active) {
-    $conditions['status'] = 1;
+    $query->propertyCondition('status', TRUE);
   }
 
-  return entity_load('commerce_cardonfile', array(), $conditions);
+  $result = $query->execute();
+
+  if (isset($result['commerce_cardonfile'])) {
+    return commerce_cardonfile_load_multiple(array_keys($result['commerce_cardonfile']));
+  }
+  else {
+    return FALSE;
+  }
 }
 
 /**
@@ -693,21 +706,25 @@ function commerce_cardonfile_load_multiple_by_uid($uid, $instance_id = NULL, $ac
  *   The payment method instance id
  *
  * @return
- *   An array of data arrays indexed by card_id.
+ *   The default card or FALSE if no default card set.
  */
 function commerce_cardonfile_load_user_default_cards($owner_uid, $instance_id = NULL) {
-  $conditions = array(
-    'uid' => $owner_uid,
-    'status' => 1,
-    'instance_default' => 1,
-  );
+
+  $return = array();
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'commerce_cardonfile')
+  ->propertyCondition('uid', $uid);
 
   if (!empty($instance_id)) {
-    $conditions['instance_id'] = $instance_id;
+    $query->propertyCondition('instance_id', $instance_id);
   }
 
-  $cards = commerce_cardonfile_load_multiple(array(), $conditions);
-  return $cards;
+  $query->propertyCondition('status', TRUE);
+  $query->propertyCondition('instance_default', TRUE);
+
+  $result = $query->execute();
+
+  return commerce_cardonfile_load_multiple(array_keys($result['commerce_cardonfile']));
 }
 
 /**
@@ -754,7 +771,7 @@ function commerce_cardonfile_save(&$card_data) {
 
 /**
  * Deletes stored card data by local ID.
- *s
+ *
  * @param $card_id
  *   The local ID of the card data to delete.
  */
@@ -765,12 +782,21 @@ function commerce_cardonfile_delete($card_id) {
 /**
  * Returns TRUE if the card data has NOT expired
  */
-function commerce_cardonfile_check_expiration($card_data) {
+function commerce_cardonfile_validate_card_expiration($card_data) {
   if (!isset($card_data->card_exp_month) || !isset($card_data->card_exp_year)) {
     return FALSE;
   }
 
-  return commerce_cardonfile_validate_expiration($card_data->card_exp_month, $card_data->card_exp_year);
+  return commerce_cardonfile_validate_exp_date($card_data->card_exp_month, $card_data->card_exp_year);
+}
+
+/**
+ * Returns TRUE if the card has NOT expired
+ */
+function commerce_cardonfile_validate_exp_date($month, $year) {
+  commerce_cardonfile_load_credit_card_helpers();
+  $check = commerce_payment_validate_credit_card_exp_date($month, $year);
+  return $check === TRUE;
 }
 
 /**
@@ -779,11 +805,11 @@ function commerce_cardonfile_check_expiration($card_data) {
 function commerce_cardonfile_payment_method_available_callbacks() {
   return array(
     'create callback',
+    'create form callback',
     'update callback',
+    'update form callback',
     'delete callback',
-    'process callback',
-    'get address callback',
-    'charge callback', // (implemented in commerce_recurring)
+    'charge callback',
   );
 }
 
@@ -802,7 +828,7 @@ function commerce_cardonfile_can_charge($card_data) {
   }
 
   // DENY if card is expired
-  if (!commerce_cardonfile_check_expiration($card_data)) {
+  if (!commerce_cardonfile_validate_card_expiration($card_data)) {
     return FALSE;
   }
 
@@ -815,7 +841,7 @@ function commerce_cardonfile_can_charge($card_data) {
   }
 
   // ALLOW/DENY based on payment method capabilities
-  $callback = commerce_cardonfile_payment_method_callback($payment_method, 'process callback');
+  $callback = commerce_cardonfile_payment_method_callback($payment_method, 'charge callback');
   return $callback ? TRUE : FALSE;
 }
 
@@ -826,12 +852,12 @@ function commerce_cardonfile_can_charge($card_data) {
  *   The payment method object.
  * @param $callback
  *   The callback function to return, one of:
- *    - 'create callback',
+ *    - 'create callback'
+ *    - 'create form callback'
  *    - 'update callback'
+ *    - 'update form callback'
  *    - 'delete callback'
- *    - 'process callback'
- *    - 'get address callback'
- *    - 'charge callback' (implemented in commerce_recurring)
+ *    - 'charge callback'
  *
  * @return
  *   A string containing the name of the callback function or FALSE if it could
@@ -851,12 +877,12 @@ function commerce_cardonfile_payment_method_callback($payment_method, $callback)
  *
  * @param $callback
  *   The callback function to return, one of:
- *    - 'create callback',
+ *    - 'create callback'
+ *    - 'create form callback'
  *    - 'update callback'
+ *    - 'update form callback'
  *    - 'delete callback'
- *    - 'process callback'
- *    - 'get address callback'
- *    - 'charge callback' (implemented in commerce_recurring)
+ *    - 'charge callback'
  *
  * @return
  *   An array of callback function names keyed by payment method id
@@ -886,13 +912,12 @@ function commerce_cardonfile_payment_method_implements($callback) {
   return isset($cache[$callback]) ? $cache[$callback] : array();
 }
 
-// -----------------------------------------------------------------------
-// Order handling
+
 
 /**
  * Define property info for line item Kiala Point records
  */
-function commerce_cardonfile_order_process_card_response_property_info_callback() {
+function commerce_cardonfile_charge_card_response_property_info_callback() {
   return array(
     'status' => array(
       'label' => t('Status'),
@@ -901,26 +926,25 @@ function commerce_cardonfile_order_process_card_response_property_info_callback(
     'code' => array(
       'label' => t('Status Code'),
       'type' => 'text',
-      'options list' => 'commerce_cardonfile_order_process_card_status_code_options',
+      'options list' => 'commerce_cardonfile_charge_card_status_code_options',
     ),
     'error_level' => array(
       'label' => t('Error Level'),
       'type' => 'integer',
-      'options list' => 'commerce_cardonfile_order_process_card_error_level_options',
-      'getter callback' => 'commerce_cardonfile_order_process_card_get_properties',
+      'options list' => 'commerce_cardonfile_charge_card_error_level_options',
+      'getter callback' => 'commerce_cardonfile_charge_card_get_properties',
       'computed' => TRUE,
     ),
     'message' => array(
       'label' => t('Message'),
       'description' => t('Message for the process response.'),
       'type' => 'text',
-      'getter callback' => 'commerce_cardonfile_order_process_card_get_properties',
+      'getter callback' => 'commerce_cardonfile_charge_card_get_properties',
       'computed' => TRUE,
     ),
     'card_chosen' => array(
       'label' => t('Card Chosen'),
-      'type' => 'struct',
-      'property info' => commerce_cardonfile_property_info_callback(),
+      'type' => 'commerce_cardonfile',
     ),
   );
 }
@@ -928,7 +952,7 @@ function commerce_cardonfile_order_process_card_response_property_info_callback(
 /**
  * Returns an options list of processing card response status codes
  */
-function commerce_cardonfile_order_process_card_status_code_options() {
+function commerce_cardonfile_charge_card_status_code_options() {
   return array(
     COMMERCE_COF_PROCESS_CODE_INSUFFICIENT_DATA => t('Insufficient data'),
     COMMERCE_COF_PROCESS_CODE_CARD_NA => t('No card available'),
@@ -944,7 +968,7 @@ function commerce_cardonfile_order_process_card_status_code_options() {
 /**
  * Returns an option list of processing card response error level
  */
-function commerce_cardonfile_order_process_card_error_level_options() {
+function commerce_cardonfile_charge_card_error_level_options() {
   return array(
     0 => t('Notice'),
     1 => t('Warning'),
@@ -955,7 +979,7 @@ function commerce_cardonfile_order_process_card_error_level_options() {
 /**
  * Callback for getting payment transaction properties.
  */
-function commerce_cardonfile_order_process_card_get_properties($data, array $options, $name) {
+function commerce_cardonfile_charge_card_get_properties($data, array $options, $name) {
   switch ($name) {
     case 'message':
       if (!empty($data['message'])) {
@@ -970,14 +994,14 @@ function commerce_cardonfile_order_process_card_get_properties($data, array $opt
       }
 
     case 'error_level':
-      return commerce_cardonfile_order_process_card_error_level($data);
+      return commerce_cardonfile_charge_card_error_level($data);
   }
 }
 
 /**
  * Returns the error level for a given card processing response array
  */
-function commerce_cardonfile_order_process_card_error_level($response) {
+function commerce_cardonfile_charge_card_error_level($response) {
   if (empty($response['code'])) {
     return 0;
   }
@@ -1017,8 +1041,8 @@ function commerce_cardonfile_order_process_card_error_level($response) {
  * @return
  *   TRUE if the order was processed successfully
  */
-function commerce_cardonfile_order_process_card($order, $charge = array(), $card_data = array()) {
-  $response = _commerce_cardonfile_order_invoke_process_card($order, $charge, $card_data);
+function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_data = array()) {
+  $response = _commerce_cardonfile_order_invoke_charge_card($order, $charge, $card_data);
   $card_chosen = array();
   if (!empty($response['card_chosen'])) {
     $card_chosen = $response['card_chosen'];
@@ -1028,10 +1052,10 @@ function commerce_cardonfile_order_process_card($order, $charge = array(), $card
   }
 
   if (empty($response) || empty($response['status'])) {
-    rules_invoke_all('commerce_cardonfile_order_process_failed', $card_chosen, $order, $charge, $response);
+    rules_invoke_all('commerce_cardonfile_charge_failed', $card_chosen, $order, $charge, $response);
   }
   else {
-    rules_invoke_all('commerce_cardonfile_order_process_success', $card_chosen, $order, $charge, $response);
+    rules_invoke_all('commerce_cardonfile_charge_success', $card_chosen, $order, $charge, $response);
   }
 
   return $response;
@@ -1053,7 +1077,7 @@ function commerce_cardonfile_order_process_card($order, $charge = array(), $card
  * @return
  *   TRUE if the order was processed successfully
  */
-function _commerce_cardonfile_order_invoke_process_card($order, $charge = array(), $card_data = array(), $forced_instance_id = NULL) {
+function _commerce_cardonfile_order_invoke_charge_card($order, $charge = array(), $card_data = array(), $forced_instance_id = NULL) {
   $response = array(
     'status' => FALSE,
     'code' => COMMERCE_COF_PROCESS_CODE_INSUFFICIENT_DATA,
@@ -1121,7 +1145,7 @@ function _commerce_cardonfile_order_invoke_process_card($order, $charge = array(
 
     if (!commerce_cardonfile_order_can_charge_card($order, $card_data)) {
       // check for expiration to set a specific code
-      if (!commerce_cardonfile_check_expiration($card_data)) {
+      if (!commerce_cardonfile_validate_card_expiration($card_data)) {
         $response['code'] = COMMERCE_COF_PROCESS_CODE_CARD_EXPIRED;
         $response['message'] = 'Card on file has expired for user @uid\'s card @card_id when attempting to process order @order_id.';
       }
@@ -1156,7 +1180,7 @@ function _commerce_cardonfile_order_invoke_process_card($order, $charge = array(
         // check first unchargeable card for expiration
         $unchargeable_card_top = reset($unchargeable_cards);
         $response['card_chosen'] = $unchargeable_card_top;
-        if (!commerce_cardonfile_check_expiration($unchargeable_card_top)) {
+        if (!commerce_cardonfile_validate_card_expiration($unchargeable_card_top)) {
           $response['code'] = COMMERCE_COF_PROCESS_CODE_CARD_EXPIRED;
           $response['message'] = 'Card on file has expired for user @uid\'s card @card_id when attempting to process order @order_id.';
         }
@@ -1371,15 +1395,6 @@ function _commerce_cardonfile_payment_method_instances($method_id, $include_disa
   }
 
   return $instances;
-}
-
-/**
- * Returns TRUE if the card has NOT expired
- */
-function commerce_cardonfile_validate_expiration($month, $year) {
-  commerce_cardonfile_load_credit_card_helpers();
-  $check = commerce_payment_validate_credit_card_exp_date($month, $year);
-  return $check === TRUE;
 }
 
 /**

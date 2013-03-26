@@ -10,21 +10,19 @@
  */
 function commerce_cardonfile_rules_data_info() {
   return array(
-    'commerce_cardonfile_card_data' => array(
+    'commerce_cardonfile' => array(
       'label' => t('card data'),
-      'group' => t('Card on File Data'),
-      'wrap' => TRUE,
-      'wrapper class' => 'EntityStructureWrapper',
-      'token type' => 'commerce-cardonfile-card-data',
-      //'property info' => commerce_cardonfile_property_info_callback(),
+      'group' => t('Card on File'),
+      'parent' => 'entity',
+      'token type' => 'commerce-cardonfile',
     ),
-    'commerce_cardonfile_process_card_response' => array(
-      'label' => t('process card response'),
-      'group' => t('Process Card on File Response'),
+    'commerce_cardonfile_charge_card_response' => array(
+      'label' => t('charge card response'),
+      'group' => t('Card on File'),
       'wrap' => TRUE,
       'wrapper class' => 'EntityStructureWrapper',
-      'token type' => 'commerce-cardonfile-process-card-response',
-      //'property info' => commerce_cardonfile_order_process_card_response_property_info_callback(),
+      'token type' => 'commerce-cardonfile-charge-card-response',
+      'property info' => commerce_cardonfile_charge_card_response_property_info_callback(),
     ),
   );
 }
@@ -91,8 +89,8 @@ function commerce_cardonfile_rules_event_info() {
     ),
   );
 
-  $events['commerce_cardonfile_order_process_failed'] = array(
-    'label' => t('After a failed attempt to process an order'),
+  $events['commerce_cardonfile_order_charge_failed'] = array(
+    'label' => t('After a failed attempt to charge an order'),
     'group' => t('Commerce Card on File'),
     'access callback' => 'commerce_order_rules_access',
     'variables' => array(
@@ -109,14 +107,14 @@ function commerce_cardonfile_rules_event_info() {
         'label' => t('Charge'),
       ),
       'response' => array(
-        'type' => 'commerce_cardonfile_process_card_response',
-        'label' => t('Process Card Response'),
+        'type' => 'commerce_cardonfile_charge_card_response',
+        'label' => t('charge Card Response'),
       ),
     ),
   );
 
-  $events['commerce_cardonfile_order_process_success'] = array(
-    'label' => t('After a successful processing of an order'),
+  $events['commerce_cardonfile_order_charge_success'] = array(
+    'label' => t('After a successful chargeing of an order'),
     'group' => t('Commerce Card on File'),
     'access callback' => 'commerce_order_rules_access',
     'variables' => array(
@@ -133,8 +131,8 @@ function commerce_cardonfile_rules_event_info() {
         'label' => t('Charge'),
       ),
       'response' => array(
-        'type' => 'commerce_cardonfile_process_card_response',
-        'label' => t('Process Card Response'),
+        'type' => 'commerce_cardonfile_charge_card_response',
+        'label' => t('charge Card Response'),
       ),
     ),
   );
@@ -148,8 +146,8 @@ function commerce_cardonfile_rules_event_info() {
 function commerce_cardonfile_rules_action_info() {
   $actions = array();
 
-  $actions['commerce_cardonfile_order_process_card'] = array(
-    'label' => t('Process an order with a card on file'),
+  $actions['commerce_cardonfile_order_charge_card'] = array(
+    'label' => t('charge an order with a card on file'),
     'group' => t('Commerce Card on File'),
     'parameter' => array(
       'order' => array(
@@ -172,19 +170,19 @@ function commerce_cardonfile_rules_action_info() {
         'type' => 'text',
         'label' => t('Payment method instance id'),
         'description' => t("If provided and Card Data is provided, then the instance id must match that of the card data. If not provided, then the order owner's first chargeable card provided by hook_commerce_cardonfile_order_chargeable_cards() will be used."),
-        'options list' => 'commerce_cardonfile_rules_payment_instance_process_options_list',
+        'options list' => 'commerce_cardonfile_rules_payment_instance_charge_options_list',
         'optional' => TRUE,
       ),
     ),
     'provides' => array(
-      'process_card_response' => array(
-        'type' => 'commerce_cardonfile_process_card_response',
-        'label' => t('Process Card Response'),
+      'charge_card_response' => array(
+        'type' => 'commerce_cardonfile_charge_card_response',
+        'label' => t('charge Card Response'),
         'save' => FALSE,
       ),
     ),
     'callbacks' => array(
-      'execute' => 'commerce_cardonfile_rules_action_order_process_card',
+      'execute' => 'commerce_cardonfile_rules_action_order_charge_card',
     ),
   );
 
@@ -193,11 +191,11 @@ function commerce_cardonfile_rules_action_info() {
 }
 
 /**
- * Options list for payment method instances that provide a process callback
+ * Options list for payment method instances that provide a charge callback
  */
-function commerce_cardonfile_rules_payment_instance_process_options_list() {
+function commerce_cardonfile_rules_payment_instance_charge_options_list() {
   $options = array('' => t('- None -'));
-  $implements = commerce_cardonfile_payment_method_implements('process callback');
+  $implements = commerce_cardonfile_payment_method_implements('charge callback');
 
   foreach ($implements as $method_id => $method_function) {
     $payment_method_instances = _commerce_cardonfile_payment_method_instances($method_id, TRUE);
@@ -219,18 +217,18 @@ function commerce_cardonfile_rules_payment_instance_process_options_list() {
 }
 
 /**
- * Rules action callback for commerce_cardonfile_order_process_card
+ * Rules action callback for commerce_cardonfile_order_charge_card
  */
-function commerce_cardonfile_rules_action_order_process_card($order, $charge = NULL, $card_data = NULL, $forced_instance_id = NULL) {
+function commerce_cardonfile_rules_action_order_charge_card($order, $charge = NULL, $card_data = NULL, $forced_instance_id = NULL) {
 
   if (!isset($card_data)) {
     $card_datas = commerce_cardonfile_load_user_default_cards($order->uid);
     $card_data = $card_datas[1];
   }
 
-  $response = commerce_cardonfile_order_process_card($order, $charge, $card_data, $forced_instance_id);
+  $response = commerce_cardonfile_order_charge_card($order, $charge, $card_data, $forced_instance_id);
 
   watchdog('commerce_cardonfile', print_r($response, TRUE));
 
-  return array('process_card_response' => $response);
+  return array('charge_card_response' => $response);
 }

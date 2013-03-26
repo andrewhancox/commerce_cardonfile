@@ -17,19 +17,26 @@ function commerce_cardonfile_overview($account) {
  * Displays the form for updating cardonfile data.
  *
  * @param $card_data
- *   The data array representing a card on file.
+ *   The card on file entity.
  */
 function commerce_cardonfile_update($card_data) {
   // Set the title of the page.
   drupal_set_title(t('Update your credit card data'));
-  return drupal_get_form('commerce_cardonfile_update_form', $card_data);
+  $payment_method = commerce_payment_method_instance_load($card_data->instance_id);
+
+  if ($form_calback = commerce_cardonfile_payment_method_callback($payment_method, 'update form callback')) {
+    return drupal_get_form($form_calback, $card_data);
+  }
+  else {
+    return drupal_get_form('commerce_cardonfile_update_form', $card_data);
+  }
 }
 
 /**
  * Builds the form for updating cardonfile data.
  *
  * @param $card_data
- *   The data array representing a card on file.
+ *   The card on file entity.
  */
 function commerce_cardonfile_update_form($form, &$form_state, $card_data) {
   // Load the credit card helper functions from the Payment module.
@@ -41,10 +48,10 @@ function commerce_cardonfile_update_form($form, &$form_state, $card_data) {
   );
 
   $defaults = array(
-    'owner' => $card_data['card_name'],
-    'number' => t('(Last 4): @number', array('@number' => $card_data['card_number'])),
-    'exp_month' => $card_data['card_exp_month'],
-    'exp_year' => $card_data['card_exp_year'],
+    'owner' => $card_data->card_name,
+    'number' => t('(Last 4): @number', array('@number' => $card_data->card_number)),
+    'exp_month' => $card_data->card_exp_month,
+    'exp_year' => $card_data->card_exp_year,
   );
 
   $form += commerce_payment_credit_card_form(array('owner' => TRUE), $defaults);
@@ -53,7 +60,7 @@ function commerce_cardonfile_update_form($form, &$form_state, $card_data) {
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Update card data'),
-    '#suffix' => l(t('Cancel'), 'user/' . $card_data['uid'] . '/stored-payment-methods'),
+    '#suffix' => l(t('Cancel'), 'user/' . $card_data->uid . '/cards'),
   );
 
   return $form;
@@ -128,9 +135,37 @@ function commerce_cardonfile_update_form_submit($form, &$form_state) {
  * Builds the form for deleting cardonfile data.
  *
  * @param $card_data
- *   The data array representing a card on file.
+ *   The card on file entity.
  */
 function commerce_cardonfile_delete_form($form, &$form_state, $card_data) {
+  module_load_include('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
+
+  $card_types = commerce_payment_credit_card_types();
+
+  $form['card_holder'] = array(
+    '#type' => 'item',
+    '#title' => t('Card holder'),
+    '#markup' => $card_data->card_name,
+  );
+
+  $form['card_type'] = array(
+    '#type' => 'item',
+    '#title' => t('Card Type'),
+    '#markup' => !empty($card_types[$card_data->card_type]) ? $card_types[$card_data->card_type] : $card_data->card_type,
+  );
+
+  $form['card_number'] = array(
+    '#type' => 'item',
+    '#title' => t('Card Number'),
+    '#markup' => 'XXXX - XXXX - XXXX - ' . $card_data->card_number,
+  );
+
+  $form['card_expire'] = array(
+    '#type' => 'item',
+    '#title' => t('Card Expires'),
+    '#markup' => $card_data->card_exp_month . ' / ' . $card_data->card_exp_year,
+  );
+
   $form['card_data'] = array(
     '#type' => 'value',
     '#value' => $card_data,
@@ -138,8 +173,8 @@ function commerce_cardonfile_delete_form($form, &$form_state, $card_data) {
 
   return confirm_form(
     $form,
-    t('Are you sure you want to delete this card data?'),
-    'user/' . $card_data['uid'] . '/cards',
+    t('Are you sure you want to delete this card ?'),
+    'user/' . $card_data->uid . '/cards',
     theme('card_data_overview', array('card_data' => $card_data)),
     t('Delete')
   );
@@ -152,7 +187,7 @@ function commerce_cardonfile_delete_form_submit($form, &$form_state) {
   $card_data = $form_state['values']['card_data'];
 
   // Invoke the payment method's card delete callback.
-  $payment_method = commerce_payment_method_instance_load($card_data['instance_id']);
+  $payment_method = commerce_payment_method_instance_load($card_data->instance_id);
   $callback = $payment_method['cardonfile']['delete callback'];
 
   if (function_exists($callback)) {
@@ -160,24 +195,24 @@ function commerce_cardonfile_delete_form_submit($form, &$form_state) {
       // Display a message if we failed to communicate properly with the payment
       // gateway in the Card on File delete callback.
       drupal_set_message(t('We encountered an error attempting to delete your card data. Please try again and contact us if this error persists.'), 'error');
-      $form_state['redirect'] = 'user/' . $card_data['uid'] . '/cards';
+      $form_state['redirect'] = 'user/' . $card_data->uid . '/cards';
       return;
     }
   }
 
   // Disable the card data but retain the record.
-  $card_data['status'] = 0;
+  $card_data->status = 0;
   commerce_cardonfile_save($card_data);
 
   drupal_set_message(t('The stored card data has been deleted.'));
 
   // Redirect to the payment methods tab if the user has other stored payment.
-  $stored_cards = commerce_cardonfile_load_multiple_by_uid($card_data['uid']);
+  $stored_cards = commerce_cardonfile_load_multiple_by_uid($card_data->uid);
 
   if (!empty($stored_cards)) {
-    $form_state['redirect'] = 'user/' . $card_data['uid'] . '/cards';
+    $form_state['redirect'] = 'user/' . $card_data->uid . '/cards';
   }
   else {
-    $form_state['redirect'] = 'user/' . $card_data['uid'];
+    $form_state['redirect'] = 'user/' . $card_data->uid;
   }
 }
