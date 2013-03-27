@@ -7,13 +7,6 @@
 
 
 /**
- * Displays the card data overview for the "Stored payment methods" account tab.
- */
-function commerce_cardonfile_overview($account) {
-
-}
-
-/**
  * Displays the form for updating cardonfile data.
  *
  * @param $card_data
@@ -48,14 +41,24 @@ function commerce_cardonfile_update_form($form, &$form_state, $card_data) {
   );
 
   $defaults = array(
-    'owner' => $card_data->card_name,
-    'number' => t('(Last 4): @number', array('@number' => $card_data->card_number)),
     'exp_month' => $card_data->card_exp_month,
     'exp_year' => $card_data->card_exp_year,
   );
 
-  $form += commerce_payment_credit_card_form(array('owner' => TRUE), $defaults);
-  $form['credit_card']['number']['#description'] = t('Leaving this field alone will leave the current card number unchanged.');
+  $form += commerce_payment_credit_card_form(array(), $defaults);
+
+  $form['credit_card']['card_holder'] = array(
+    '#type' => 'item',
+    '#title' => t('Card holder'),
+    '#markup' => $card_data->card_name,
+    '#weight' => -5,
+  );
+
+  $form['credit_card']['number'] = array(
+    '#type' => 'item',
+    '#title' => t('Card Number'),
+    '#markup' => 'XXXX - XXXX - XXXX - ' . $card_data->card_number,
+  );
 
   $form['submit'] = array(
     '#type' => 'submit',
@@ -71,12 +74,6 @@ function commerce_cardonfile_update_form($form, &$form_state, $card_data) {
  */
 function commerce_cardonfile_update_form_validate($form, &$form_state) {
   module_load_include('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
-  // Ensure non-default values are valid numbers.
-  if ($form_state['values']['credit_card']['number'] != $form['credit_card']['number']['#default_value']) {
-    if (!commerce_payment_validate_credit_card_number($form_state['values']['credit_card']['number'])) {
-      form_set_error('credit_card][number', t('The credit card number you entered is invalid.'));
-    }
-  }
 
   // Ensure the expiration date is not being updated to a past date.
   $exp_valid = commerce_payment_validate_credit_card_exp_date($form_state['values']['credit_card']['exp_month'], $form_state['values']['credit_card']['exp_year']);
@@ -92,18 +89,12 @@ function commerce_cardonfile_update_form_validate($form, &$form_state) {
 function commerce_cardonfile_update_form_submit($form, &$form_state) {
   // Update the card data with items from the form.
   $card_data = $form_state['values']['card_data'];
-  $card_data['card_name'] = $form_state['values']['credit_card']['owner'];
 
-  // Only update the last 4 if we were given a new valid credit card number.
-  if ($form_state['values']['credit_card']['number'] != $form['credit_card']['number']['#default_value']) {
-    $card_data['card_number'] = substr($form_state['values']['credit_card']['number'], -4);
-  }
-
-  $card_data['card_exp_month'] = $form_state['values']['credit_card']['exp_month'];
-  $card_data['card_exp_year'] = $form_state['values']['credit_card']['exp_year'];
+  $card_data->card_exp_month = $form_state['values']['credit_card']['exp_month'];
+  $card_data->card_exp_year = $form_state['values']['credit_card']['exp_year'];
 
   // Invoke the payment method's card update callback.
-  $payment_method = commerce_payment_method_instance_load($card_data['instance_id']);
+  $payment_method = commerce_payment_method_instance_load($card_data->instance_id);
   $callback = $payment_method['cardonfile']['update callback'];
 
   if (function_exists($callback)) {
@@ -120,15 +111,7 @@ function commerce_cardonfile_update_form_submit($form, &$form_state) {
 
   drupal_set_message(t('The stored card data has been updated.'));
 
-  // Redirect to the payment methods tab if the user has other stored payment.
-  $stored_cards = commerce_cardonfile_load_multiple_by_uid($card_data['uid']);
-
-  if (!empty($stored_cards)) {
-    $form_state['redirect'] = 'user/' . $card_data['uid'] . '/cards';
-  }
-  else {
-    $form_state['redirect'] = 'user/' . $card_data['uid'];
-  }
+  $form_state['redirect'] = 'user/' . $card_data->uid . '/cards';
 }
 
 /**

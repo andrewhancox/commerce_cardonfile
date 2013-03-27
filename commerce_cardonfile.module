@@ -658,7 +658,7 @@ function commerce_cardonfile_load($card_id) {
 }
 
 /**
- * Loads stored card data for a user by payment method instance.
+ * Loads stored card data.
  *
  * @param $card_ids
  *   An array of card ids to load
@@ -672,6 +672,13 @@ function commerce_cardonfile_load_multiple($card_ids = array(), $reset = FALSE) 
   return entity_load('commerce_cardonfile', $card_ids, array(), $reset);
 }
 
+/**
+ * Loads stored card data for a user by payment method instance.
+ * @param unknown $uid
+ * @param string $instance_id
+ * @param string $active
+ * @return Ambigous <The, An>|boolean
+ */
 function commerce_cardonfile_load_multiple_by_uid($uid, $instance_id = NULL, $active = TRUE) {
 
   $return = array();
@@ -708,7 +715,7 @@ function commerce_cardonfile_load_multiple_by_uid($uid, $instance_id = NULL, $ac
  * @return
  *   The default card or FALSE if no default card set.
  */
-function commerce_cardonfile_load_user_default_cards($owner_uid, $instance_id = NULL) {
+function commerce_cardonfile_load_user_default_cards($uid, $instance_id = NULL) {
 
   $return = array();
   $query = new EntityFieldQuery();
@@ -720,11 +727,16 @@ function commerce_cardonfile_load_user_default_cards($owner_uid, $instance_id = 
   }
 
   $query->propertyCondition('status', TRUE);
-  $query->propertyCondition('instance_default', TRUE);
+  //$query->propertyCondition('instance_default', TRUE);
 
   $result = $query->execute();
 
-  return commerce_cardonfile_load_multiple(array_keys($result['commerce_cardonfile']));
+  if (isset($result['commerce_cardonfile'])) {
+    return commerce_cardonfile_load_multiple(array_keys($result['commerce_cardonfile']));
+  }
+  else {
+    return FALSE;
+  }
 }
 
 /**
@@ -1041,43 +1053,8 @@ function commerce_cardonfile_charge_card_error_level($response) {
  * @return
  *   TRUE if the order was processed successfully
  */
-function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_data = array()) {
-  $response = _commerce_cardonfile_order_invoke_charge_card($order, $charge, $card_data);
-  $card_chosen = array();
-  if (!empty($response['card_chosen'])) {
-    $card_chosen = $response['card_chosen'];
-  }
-  elseif (!empty($card_data)) {
-    $card_chosen = $card_data;
-  }
+function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_data = array(), $forced_instance_id = NULL) {
 
-  if (empty($response) || empty($response['status'])) {
-    rules_invoke_all('commerce_cardonfile_charge_failed', $card_chosen, $order, $charge, $response);
-  }
-  else {
-    rules_invoke_all('commerce_cardonfile_charge_success', $card_chosen, $order, $charge, $response);
-  }
-
-  return $response;
-}
-
-/**
- * Invoke the payment method callback to process a charge for a given an order
- *
- * @param $order
- *   An order object
- * @param $charge
- *   Charge array of amount, currency_code
- * @param $card_data
- *   The card data array. If not provided, then the chargeable card for the
- *   order will be determined.
- * @param $forced_instance_id
- *   The payment method instance id to force for order processing
- *
- * @return
- *   TRUE if the order was processed successfully
- */
-function _commerce_cardonfile_order_invoke_charge_card($order, $charge = array(), $card_data = array(), $forced_instance_id = NULL) {
   $response = array(
     'status' => FALSE,
     'code' => COMMERCE_COF_PROCESS_CODE_INSUFFICIENT_DATA,
@@ -1157,7 +1134,8 @@ function _commerce_cardonfile_order_invoke_charge_card($order, $charge = array()
       return $response;
     }
   }
-  elseif ($possible_cards = _commerce_cardonfile_invoke_order_chargeable_cards($order)) {
+
+  elseif ($possible_cards = commerce_cardonfile_load_user_default_cards($order->uid, $forced_instance_id)) {
     // Determine any chargeable cards ...
     $card_data = array();
     $unchargeable_cards = array();
@@ -1221,12 +1199,12 @@ function _commerce_cardonfile_order_invoke_charge_card($order, $charge = array()
   );
 
   // determine payment method's callback function
-  $func = commerce_cardonfile_payment_method_callback($payment_method, 'process callback');
+  $func = commerce_cardonfile_payment_method_callback($payment_method, 'charge callback');
 
   // Exit if no callback - sanity check since it should have this if "can charge"
   if (empty($func)) {
     $response['code'] = COMMERCE_COF_PROCESS_CODE_METHOD_NOT_CAPABLE;
-    $response['message'] = 'The payment method @method instance (@instance_id) does not implement a valid card on file "process callback".';
+    $response['message'] = 'The payment method @method instance (@instance_id) does not implement a valid card on file "charge callback".';
     return $response;
   }
 
@@ -1258,6 +1236,24 @@ function _commerce_cardonfile_order_invoke_charge_card($order, $charge = array()
         $order_wrapper->save();
       }
     }
+  }
+
+
+
+
+
+  if (!empty($response['card_chosen'])) {
+    $card_chosen = $response['card_chosen'];
+  }
+  elseif (!empty($card_data)) {
+    $card_chosen = $card_data;
+  }
+
+  if (empty($response) || empty($response['status'])) {
+    rules_invoke_all('commerce_cardonfile_charge_failed', $card_chosen, $order, $charge, $response);
+  }
+  else {
+    rules_invoke_all('commerce_cardonfile_charge_success', $card_chosen, $order, $charge, $response);
   }
 
   return $response;

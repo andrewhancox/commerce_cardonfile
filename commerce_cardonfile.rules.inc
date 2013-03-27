@@ -221,14 +221,7 @@ function commerce_cardonfile_rules_payment_instance_charge_options_list() {
  */
 function commerce_cardonfile_rules_action_order_charge_card($order, $charge = NULL, $card_data = NULL, $forced_instance_id = NULL) {
 
-  if (!isset($card_data)) {
-    $card_datas = commerce_cardonfile_load_user_default_cards($order->uid);
-    $card_data = $card_datas[1];
-  }
-
   $response = commerce_cardonfile_order_charge_card($order, $charge, $card_data, $forced_instance_id);
-
-  watchdog('commerce_cardonfile', print_r($response, TRUE));
 
   return array('charge_card_response' => $response);
 }
