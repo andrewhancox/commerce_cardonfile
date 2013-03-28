@@ -11,49 +11,6 @@
 function commerce_cardonfile_views_data() {
   $data = array();
 
-  // Base table setup.
-  $data['commerce_cardonfile']['table']['group']  = t('Commerce Card on File');
-  $data['commerce_cardonfile']['table']['base'] = array(
-    'field' => 'id',
-    'title' => t('Commerce Card on File'),
-    'help' => t('Saves information about each saved card data.'),
-  );
-
-  // For other base tables, explain how we join
-  // 'left_field' is the primary key in the referenced table.
-  // 'field' is the foreign key in this table.
-  $data['commerce_cardonfile']['table']['join'] = array(
-    'users' => array(
-      'left_field' => 'uid',
-      'field' => 'uid',
-    ),
-  );
-
-  // Card ID.
-  $data['commerce_cardonfile']['card_id'] = array(
-    'title' => t('Card ID'),
-    'help' => t('The unique internal identifier of the card data.'),
-    'field' => array(
-      'handler' => 'views_handler_field',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_numeric',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_numeric',
-    ),
-    'relationship' => array(
-      'handler' => 'views_handler_relationship',
-      'base' => 'commerce_cardonfile',
-      'field' => 'card_id',
-      'label' => t('Card Data', array(), array('context' => 'credit card data')),
-    ),
-  );
-
   // Card owner uid.
   $data['commerce_cardonfile']['uid'] = array(
     'title' => t('Uid'),
@@ -259,22 +216,6 @@ function commerce_cardonfile_views_data() {
   $data['commerce_cardonfile']['created'] = array(
     'title' => t('Created'),
     'help' => t('The date when this card was created.'),
-    'field' => array(
-      'handler' => 'views_handler_field_date',
-      'click sortable' => TRUE,
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort_date',
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_date',
-    ),
-  );
-
-  // Card created timestamp.
-  $data['commerce_cardonfile']['changed'] = array(
-    'title' => t('Changed'),
-    'help' => t('The date when this card was changed.'),
     'field' => array(
       'handler' => 'views_handler_field_date',
       'click sortable' => TRUE,

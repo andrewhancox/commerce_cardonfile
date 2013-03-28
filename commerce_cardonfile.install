@@ -163,7 +163,7 @@ function commerce_cardonfile_schema() {
       'instance_id' => array('instance_id'),
     ),
     'foreign keys' => array(
-      'owner' => array(
+      'creator' => array(
         'table' => 'users',
         'columns' => array('uid' => 'uid'),
       ),

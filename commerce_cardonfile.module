@@ -156,6 +156,56 @@ function commerce_cardonfile_entity_info() {
 }
 
 /**
+ * Returns a list of cof data statuses
+ */
+function commerce_cardonfile_statuses() {
+  $statuses = array(
+    0 => t('Disabled'),
+    1 => t('Active'),
+    2 => t('Not deletable'),
+  );
+
+  return $statuses;
+}
+
+/**
+ * Returns the human readable title of any or all data statuses.
+ *
+ * @param $name
+ *   Optional parameter specifying the name of the status whose title
+ *     to return.
+ *
+ * @return
+ *   Either an array of all status titles keyed by the status_id or a
+ *     string containing the human readable title for the specified status. If a
+ *     status is specified that does not exist, this function returns FALSE.
+ */
+function commerce_cardonfile_status_get_title($name = NULL) {
+  $statuses = commerce_cardonfile_statuses();
+
+  // Return a status title if specified and it exists.
+  if (!empty($name)) {
+    if (isset($statuses[$name])) {
+      return $statuses[$name];
+    }
+    else {
+      // Return FALSE if it does not exist.
+      return FALSE;
+    }
+  }
+
+  // Otherwise return all titles.
+  return $statuses;
+}
+
+/**
+ * Wraps commerce_cardonfile_status_get_title().
+ */
+function commerce_cardonfile_status_options_list() {
+  return commerce_cardonfile_status_get_title();
+}
+
+/**
  * Implements hook_hook_info().
  */
 function commerce_cardonfile_hook_info() {
@@ -727,7 +777,7 @@ function commerce_cardonfile_load_user_default_cards($uid, $instance_id = NULL) 
   }
 
   $query->propertyCondition('status', TRUE);
-  //$query->propertyCondition('instance_default', TRUE);
+  $query->propertyCondition('instance_default', TRUE);
 
   $result = $query->execute();
 
@@ -773,12 +823,30 @@ function commerce_cardonfile_new(array $values = array()) {
  *   A cardonfile object
  *
  * @return
- *   The operation performed by drupal_write_record() on save; since the card
- *   data array is received by reference, it will contain the serial numeric
- *   card_id used to represent the card data locally after an insert.
+ *
  */
-function commerce_cardonfile_save(&$card_data) {
+function commerce_cardonfile_save(&$card_data, $billing_profile = NULL) {
+
+  if (!empty($billing_profile)) {
+    $card_data->commerce_cardonfile_profile[LANGUAGE_NONE][0]['profile_id'] = $billing_profile->profile_id;
+  }
+
   return entity_save('commerce_cardonfile', $card_data);
+}
+
+/**
+ * Set a card's instance default value
+ */
+function commerce_cardonfile_set_default_card($card_id, $instance_default_value = 1) {
+  if (!empty($card_id)) {
+    $update_data = array(
+      'card_id' => $card_id,
+      'instance_default' => !empty($instance_default_value),
+    );
+    return commerce_cardonfile_save($update_data);
+  }
+
+  return FALSE;
 }
 
 /**
@@ -1330,6 +1398,25 @@ function _commerce_cardonfile_capable_payment_methods() {
  */
 function _commerce_cardonfile_capable_payment_method_check($payment_method) {
   return !empty($payment_method['cardonfile']);
+}
+
+/**
+ * Store last inserted card data for reference by other functions
+ *
+ * Items are stored as a stack, ie last on top
+ */
+function _commerce_cardonfile_current_request_last_inserted($card_data = array()) {
+  $stack = &drupal_static(__FUNCTION__, array());
+  $stack_size = 5;
+
+  if (!empty($card_data) && !empty($card_data['card_id'])) {
+    array_unshift($stack, $card_data);
+    if (count($stack) > $stack_size) {
+      array_pop($stack);
+    }
+  }
+
+  return $stack;
 }
 
 /**
