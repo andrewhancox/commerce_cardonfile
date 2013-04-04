@@ -3,7 +3,7 @@
 /**
  * Field handler to present a card data's operations links.
  */
-class commerce_cardonfile_handler_field_data_operations extends views_handler_field {
+class commerce_cardonfile_handler_field_card_operations extends views_handler_field {
   function construct() {
     parent::construct();
 
@@ -37,10 +37,10 @@ class commerce_cardonfile_handler_field_data_operations extends views_handler_fi
   function render($values) {
     $card_id = $this->get_value($values, 'card_id');
     $uid = $this->get_value($values, 'uid');
-    $root_contextual_link_path = 'user/' . $uid . '/stored-payment-methods';
+    $root_contextual_link_path = 'user/' . $uid . '/cards';
 
     // Get the operations links.
-    $links = menu_contextual_links('commerce-cardonfile', $root_contextual_link_path, array($card_id, commerce_cardonfile_get_token()));
+    $links = menu_contextual_links('commerce-cardonfile', 'user', array($uid, 'cards', $card_id));
 
     if (!empty($links)) {
       // Add the destination to the links if specified.

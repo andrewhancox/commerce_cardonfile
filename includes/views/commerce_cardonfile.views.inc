@@ -254,7 +254,7 @@ function commerce_cardonfile_views_data() {
     'field' => array(
       'title' => t('Operations links'),
       'help' => t('Display all the available operations links for the cards.'),
-      'handler' => 'commerce_cardonfile_handler_field_data_operations',
+      'handler' => 'commerce_cardonfile_handler_field_card_operations',
     ),
   );
 

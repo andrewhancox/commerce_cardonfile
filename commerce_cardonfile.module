@@ -39,14 +39,6 @@ function commerce_cardonfile_menu() {
     'weight' => -10,
   );
 
-  $items['user/%user/card/%commerce_cardonfile'] = array(
-    'title' => 'Credit card',
-    'page callback' => 'commerce_cardonfile_redirect_to_user',
-    'page arguments' => array(1),
-    'access callback' => 'commerce_cardonfile_access',
-    'access arguments' => array(3),
-  );
-
   // create paths for each payment method
   $create_implements = commerce_cardonfile_payment_method_implements('create callback');
   foreach ($create_implements as $method_id => $method_function) {
@@ -60,7 +52,7 @@ function commerce_cardonfile_menu() {
         'instance_id' => $instance_id,
         'payment_method' => $payment_method['method_id'],
       ));
-      $items['user/%user/card/add/' . drupal_hash_base64($instance_id)] = array(
+      $items['user/%user/cards/add/' . drupal_hash_base64($instance_id)] = array(
         'title' => 'Add a !name',
         'title arguments' => array('!name' => $payment_method['display_title']),
         'page callback' => 'commerce_cardonfile_create_page',
@@ -73,7 +65,7 @@ function commerce_cardonfile_menu() {
     }
   }
 
-  $items['user/%user/card/%commerce_cardonfile/edit'] = array(
+  $items['user/%user/cards/%commerce_cardonfile/edit'] = array(
     'title' => 'Edit',
     'description' => 'Update a stored payment method.',
     'page callback' => 'commerce_cardonfile_update',
@@ -81,11 +73,11 @@ function commerce_cardonfile_menu() {
     'access callback' => 'commerce_cardonfile_access',
     'access arguments' => array('update', 3),
     'type' => MENU_LOCAL_TASK,
-    'context' => MENU_CONTEXT_INLINE,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
     'file' => 'includes/commerce_cardonfile.pages.inc',
   );
 
-  $items['user/%user/card/%commerce_cardonfile/delete'] = array(
+  $items['user/%user/cards/%commerce_cardonfile/delete'] = array(
     'title' => 'Delete',
     'description' => 'Delete a stored payment method.',
     'page callback' => 'drupal_get_form',

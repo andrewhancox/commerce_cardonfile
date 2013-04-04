@@ -12,11 +12,8 @@ core = 7.x
 ; Simple tests
 ; files[] = tests/commerce_cardonfile.test
 
-; Module includes
-files[] = includes/commerce_cardonfile.controller.inc
-
 ; Views handlers
-files[] = includes/views/handlers/commerce_cardonfile_handler_field_data_operations.inc
+files[] = includes/views/handlers/commerce_cardonfile_handler_field_card_operations.inc
 files[] = includes/views/handlers/commerce_cardonfile_handler_field_card_type.inc
 files[] = includes/views/handlers/commerce_cardonfile_handler_field_card_status.inc
 files[] = includes/views/handlers/commerce_cardonfile_handler_filter_card_status.inc
