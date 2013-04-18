@@ -48,7 +48,7 @@ function commerce_cardonfile_menu() {
     }
 
     foreach ($payment_method_instances as $instance_id => $payment_method) {
-      $new_card_data = commerce_cardonfile_data_new(array(
+      $new_card_data = commerce_cardonfile_new(array(
         'instance_id' => $instance_id,
         'payment_method' => $payment_method['method_id'],
       ));
@@ -1389,7 +1389,7 @@ function _commerce_cardonfile_capable_payment_methods() {
  *   TRUE if payment method is capable of card on file
  */
 function _commerce_cardonfile_capable_payment_method_check($payment_method) {
-  return !empty($payment_method['cardonfile']);
+  return !empty($payment_method['cardonfile']) ? $payment_method['cardonfile'] : FALSE;
 }
 
 /**
