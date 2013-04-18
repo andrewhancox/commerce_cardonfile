@@ -27,9 +27,7 @@ function commerce_cardonfile_enable() {
       ),
     );
     $field = field_create_field($field);
-  }
 
-  if (empty($instance)) {
     $instance = array(
       'field_name' => $field_name,
       'entity_type' => 'commerce_cardonfile',
@@ -53,6 +51,16 @@ function commerce_cardonfile_enable() {
 
     field_create_instance($instance);
   }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function commerce_cardonfile_uninstall() {
+  field_delete_field('commerce_cardonfile_profile');
+  // Purge field data now to allow cardonfile module to be uninstalled
+  // if this is the only field remaining.
+  field_purge_batch(10);
 }
 
 /**
