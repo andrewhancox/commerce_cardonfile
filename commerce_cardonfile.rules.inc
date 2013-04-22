@@ -89,7 +89,7 @@ function commerce_cardonfile_rules_event_info() {
     ),
   );
 
-  $events['commerce_cardonfile_order_charge_failed'] = array(
+  $events['commerce_cardonfile_charge_failed'] = array(
     'label' => t('After a failed attempt to charge an order'),
     'group' => t('Commerce Card on File'),
     'access callback' => 'commerce_order_rules_access',
@@ -113,7 +113,7 @@ function commerce_cardonfile_rules_event_info() {
     ),
   );
 
-  $events['commerce_cardonfile_order_charge_success'] = array(
+  $events['commerce_cardonfile_charge_success'] = array(
     'label' => t('After a successful chargeing of an order'),
     'group' => t('Commerce Card on File'),
     'access callback' => 'commerce_order_rules_access',
