@@ -9,7 +9,7 @@
 /**
  * Displays the form for updating cardonfile data.
  *
- * @param $card_data
+ * @param object $card_data
  *   The card on file entity.
  */
 function commerce_cardonfile_update($card_data) {
@@ -28,8 +28,6 @@ function commerce_cardonfile_update($card_data) {
 /**
  * Builds the form for updating cardonfile data.
  *
- * @param $card_data
- *   The card on file entity.
  */
 function commerce_cardonfile_update_form($form, &$form_state, $card_data) {
   // Load the credit card helper functions from the Payment module.
@@ -117,8 +115,6 @@ function commerce_cardonfile_update_form_submit($form, &$form_state) {
 /**
  * Builds the form for deleting cardonfile data.
  *
- * @param $card_data
- *   The card on file entity.
  */
 function commerce_cardonfile_delete_form($form, &$form_state, $card_data) {
   module_load_include('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
