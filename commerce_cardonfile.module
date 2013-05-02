@@ -103,7 +103,6 @@ function commerce_cardonfile_entity_info() {
     'label' => t('Commerce Card Data'),
     'entity class' => 'Entity',
     'controller class' => 'EntityAPIController',
-    'views controller class' => 'EntityDefaultViewsController',
     'base table' => 'commerce_cardonfile',
     'locking mode' => 'pessimistic',
     'fieldable' => TRUE,
