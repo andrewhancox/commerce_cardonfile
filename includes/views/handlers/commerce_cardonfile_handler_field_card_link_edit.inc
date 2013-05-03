@@ -20,6 +20,6 @@ class commerce_cardonfile_handler_field_card_link_edit extends commerce_cardonfi
     }
 
     $text = !empty($this->options['text']) ? $this->options['text'] : t('edit');
-    return l($text, 'user/'. $card->uid . '/' . 'cards/' . $card->card_id . '/edit', array('query' => drupal_get_destination()));
+    return l($text, 'user/' . $card->uid . '/' . 'cards/' . $card->card_id . '/edit', array('query' => drupal_get_destination()));
   }
 }

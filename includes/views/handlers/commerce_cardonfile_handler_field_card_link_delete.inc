@@ -20,6 +20,6 @@ class commerce_cardonfile_handler_field_card_link_delete extends commerce_cardon
     }
 
     $text = !empty($this->options['text']) ? $this->options['text'] : t('delete');
-    return l($text, 'user/'. $card->uid . '/' . 'cards/' . $card->card_id . '/delete', array('query' => drupal_get_destination()));
+    return l($text, 'user/' . $card->uid . '/' . 'cards/' . $card->card_id . '/delete', array('query' => drupal_get_destination()));
   }
 }
