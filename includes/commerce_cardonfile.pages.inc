@@ -5,6 +5,26 @@
  * User page callbacks and forms for Commerce Card on File.
  */
 
+/**
+ * Menu item title callback: returns a Card Title for its pages
+ * comprised of the card type and last 4 digits.
+ *
+ * @param $card
+ *   The card object as loaded via the URL wildcard.
+ * @return
+ *   A page title of the format "Card ##".
+ */
+function commerce_cardonfile_card_title($card_data) {
+  return t('Card @card_id', array('@card_id' => $card_data->card_type . ' - ' . $card_data->card_number));
+}
+
+/**
+ * Displays the full details of a Card on file.
+ */
+function commerce_cardonfile_card_view($card_data, $view_mode) {
+  return entity_view('commerce_cardonfile', array($card_data->card_id => $card_data), $view_mode, NULL, TRUE);
+}
+
 
 /**
  * Displays the form for updating cardonfile data.

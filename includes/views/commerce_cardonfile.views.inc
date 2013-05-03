@@ -11,6 +11,35 @@
 function commerce_cardonfile_views_data() {
   $data = array();
 
+  $data['commerce_cardonfile']['table']['group']  = t('Commerce Card on File');
+
+  $data['commerce_cardonfile']['table']['base'] = array(
+    'field' => 'card_id',
+    'title' => t('Commerce Card on File'),
+    'help' => t('A Local Tokenized Representation of a Remotely Stored Credit Card.'),
+    'access query tag' => 'commerce_cardonfile_access',
+  );
+  $data['commerce_cardonfile']['table']['entity type'] = 'commerce_cardonfile';
+
+  // Card id.
+  $data['commerce_cardonfile']['card_id'] = array(
+    'title' => t('Card ID', array(), array('context' => 'a drupal commerce card on file')),
+    'help' => t('The unique internal identifier of the card.'),
+    'field' => array(
+      'handler' => 'commerce_cardonfile_handler_field_card',
+      'click sortable' => TRUE,
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument_numeric',
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_numeric',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+  );
+
   // Card owner uid.
   $data['commerce_cardonfile']['uid'] = array(
     'title' => t('Uid'),
@@ -249,6 +278,28 @@ function commerce_cardonfile_views_data() {
     ),
   );
 
+  // Expose links to operate on the order.
+  $data['commerce_cardonfile']['view_card'] = array(
+    'field' => array(
+      'title' => t('Link'),
+      'help' => t('Provide a simple link to the administrator view of the card.'),
+      'handler' => 'commerce_cardonfile_handler_field_card_link',
+    ),
+  );
+  $data['commerce_cardonfile']['edit_card'] = array(
+    'field' => array(
+      'title' => t('Edit link'),
+      'help' => t('Provide a simple link to edit the card.'),
+      'handler' => 'commerce_cardonfile_handler_field_card_link_edit',
+    ),
+  );
+  $data['commerce_cardonfile']['delete_card'] = array(
+    'field' => array(
+      'title' => t('Delete link'),
+      'help' => t('Provide a simple link to delete the card.'),
+      'handler' => 'commerce_cardonfile_handler_field_card_link_delete',
+    ),
+  );
   // Operation links.
   $data['commerce_cardonfile']['operations'] = array(
     'field' => array(

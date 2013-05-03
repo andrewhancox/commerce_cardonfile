@@ -29,6 +29,7 @@ class commerce_cardonfile_plugin_argument_validate_card_id extends views_plugin_
    * Sets argument properties for an allowed argument
    */
   private function _set_allowed_argument($card_data) {
+    dpm($card_data);
     $this->argument->argument = $card_data['card_id'];
     $this->argument->validated_title = check_plain($card_data['card_id']);
   }

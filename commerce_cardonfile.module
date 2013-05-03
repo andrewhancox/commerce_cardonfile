@@ -39,6 +39,24 @@ function commerce_cardonfile_menu() {
     'weight' => -10,
   );
 
+  // Card operations links.
+  $items['user/%user/cards/%commerce_cardonfile'] = array(
+    'title callback' => 'commerce_cardonfile_card_title',
+    'title arguments' => array(3),
+    'page callback' => 'commerce_cardonfile_card_view',
+    'page arguments' => array(3, 'customer'),
+    'access callback' => 'commerce_cardonfile_access',
+    'access arguments' => array('view', 3),
+    'file' => 'includes/commerce_cardonfile.pages.inc',
+  );
+
+  $items['user/%user/cards/%commerce_cardonfile/view'] = array(
+    'title' => 'View',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+  );
+
   // create paths for each payment method
   $create_implements = commerce_cardonfile_payment_method_implements('create callback');
   foreach ($create_implements as $method_id => $method_function) {
