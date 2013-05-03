@@ -36,9 +36,10 @@ class commerce_cardonfile_handler_field_card_link extends views_handler_field {
 
   function render($values) {
     $text = !empty($this->options['text']) ? $this->options['text'] : t('view');
+    $card = new stdClass();
     $card->card_id = $this->get_value($values, 'card_id');
     $card->uid = $this->get_value($values, 'uid');
 
-    return l($text, 'user/'. $card->uid . '/' . 'cards/' . $card->card_id, array('query' => drupal_get_destination()));
+    return l($text, 'user/' . $card->uid . '/' . 'cards/' . $card->card_id, array('query' => drupal_get_destination()));
   }
 }
