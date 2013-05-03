@@ -837,6 +837,13 @@ function commerce_cardonfile_new(array $values = array()) {
 function commerce_cardonfile_save(&$card_data, $billing_profile = NULL) {
 
   if (!empty($billing_profile)) {
+
+    // Clone the order profile to use on the Card on File entity.
+    unset($billing_profile->profile_id);
+    unset($billing_profile->revision_id);
+    commerce_customer_profile_save($billing_profile);
+
+    // Add the billing profile to the card on file.
     $card_data->commerce_cardonfile_profile[LANGUAGE_NONE][0]['profile_id'] = $billing_profile->profile_id;
   }
 
