@@ -764,6 +764,27 @@ function commerce_cardonfile_load_multiple_by_uid($uid, $instance_id = NULL, $ac
 }
 
 /**
+ * Loads stored card data by remote id.
+ * @param unknown $remote_id
+ * @return Ambigous <The, An>|boolean
+ */
+function commerce_cardonfile_load_multiple_by_remote_id($remote_id) {
+  $return = array();
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'commerce_cardonfile')
+  ->propertyCondition('remote_id', $remote_id);
+
+  $result = $query->execute();
+
+  if (isset($result['commerce_cardonfile'])) {
+    return commerce_cardonfile_load_multiple(array_keys($result['commerce_cardonfile']));
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
  * Load the owners default cards
  *
  * @param $owner
