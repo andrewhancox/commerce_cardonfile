@@ -855,7 +855,7 @@ function commerce_cardonfile_new(array $values = array()) {
  * @return
  *
  */
-function commerce_cardonfile_save(&$card_data, $billing_profile = NULL) {
+function commerce_cardonfile_save($card_data, $billing_profile = NULL) {
 
   if (!empty($billing_profile)) {
 
@@ -876,11 +876,11 @@ function commerce_cardonfile_save(&$card_data, $billing_profile = NULL) {
  */
 function commerce_cardonfile_set_default_card($card_id, $instance_default_value = 1) {
   if (!empty($card_id)) {
-    $update_data = array(
-      'card_id' => $card_id,
-      'instance_default' => !empty($instance_default_value),
-    );
-    return commerce_cardonfile_save($update_data);
+    if ($card = commerce_cardonfile_load($card_id)) {
+      $card->instance_default = !empty($instance_default_value);
+      return commerce_cardonfile_save($card);
+    }
+    return FALSE;
   }
 
   return FALSE;
