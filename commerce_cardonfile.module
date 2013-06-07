@@ -639,16 +639,6 @@ function commerce_cardonfile_commerce_checkout_form_submit($form, &$form_state) 
   if ($pane_values['payment_details']['cardonfile'] != 'new') {
     $card_id_selected = intval($pane_values['payment_details']['cardonfile']);
   }
-  elseif ($store_card && ($cof_last_inserts = _commerce_cardonfile_current_request_last_inserted())) {
-    // Assumes the new card is the current request's last inserted card that
-    // matches the user
-    foreach ($cof_last_inserts as $card_data) {
-      if ($card_data->uid == $account->uid && $card_data->instance_id == $instance_id) {
-        $card_id_selected = $card_data->card_id;
-        break;
-      }
-    }
-  }
 
   // Submit actions for card selected
   if (!empty($card_id_selected)) {
@@ -1341,10 +1331,6 @@ function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_
     }
   }
 
-
-
-
-
   if (!empty($response['card_chosen'])) {
     $card_chosen = $response['card_chosen'];
   }
@@ -1433,25 +1419,6 @@ function _commerce_cardonfile_capable_payment_methods() {
  */
 function _commerce_cardonfile_capable_payment_method_check($payment_method) {
   return !empty($payment_method['cardonfile']) ? $payment_method['cardonfile'] : FALSE;
-}
-
-/**
- * Store last inserted card data for reference by other functions
- *
- * Items are stored as a stack, ie last on top
- */
-function _commerce_cardonfile_current_request_last_inserted($card_data = array()) {
-  $stack = &drupal_static(__FUNCTION__, array());
-  $stack_size = 5;
-
-  if (!empty($card_data) && !empty($card_data->card_id)) {
-    array_unshift($stack, $card_data);
-    if (count($stack) > $stack_size) {
-      array_pop($stack);
-    }
-  }
-
-  return $stack;
 }
 
 /**
