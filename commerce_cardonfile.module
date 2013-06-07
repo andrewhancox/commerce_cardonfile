@@ -1032,7 +1032,7 @@ function commerce_cardonfile_payment_method_implements($callback) {
 
 
 /**
- * Define property info for line item Kiala Point records
+ * Define property info for Carge Responce
  */
 function commerce_cardonfile_charge_card_response_property_info_callback() {
   return array(
