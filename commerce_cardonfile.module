@@ -472,11 +472,6 @@ function commerce_cardonfile_form_alter(&$form, &$form_state, $form_id) {
     return;
   }
 
-  // Exit if not a credit card based payment method
-  if (empty($form['commerce_payment']['payment_details']['credit_card'])) {
-    return;
-  }
-
   // Extact payment method instance id
   $instance_id = $form['commerce_payment']['payment_method']['#default_value'];
 
@@ -489,22 +484,25 @@ function commerce_cardonfile_form_alter(&$form, &$form_state, $form_id) {
     return;
   }
 
-  // Add a checkbox to the credit card details container to store the
-  // credit card for future use.
-  $storage = variable_get('commerce_cardonfile_storage', 'opt-in');
+  // For onsite payment methods add a checkbox to the credit card
+  // details container to store the credit card for future use.
+  if (!$payment_method['offsite']) {
+    $storage = variable_get('commerce_cardonfile_storage', 'opt-in');
 
-  if (in_array($storage, array('opt-in', 'opt-out'))) {
-    $form['commerce_payment']['payment_details']['credit_card']['cardonfile_store'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Store this credit card on file for future use.'),
-      '#default_value' => $storage == 'opt-out',
-    );
-  }
-  else {
-    $form['commerce_payment']['payment_details']['credit_card']['cardonfile_store'] = array(
-      '#type' => 'value',
-      '#value' => TRUE,
-    );
+    if (in_array($storage, array('opt-in', 'opt-out'))) {
+      $form['commerce_payment']['payment_details']['credit_card']['cardonfile_store'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Store this credit card on file for future use.'),
+        '#default_value' => $storage == 'opt-out',
+      );
+    }
+    else {
+      $form['commerce_payment']['payment_details']['credit_card']['cardonfile_store'] = array(
+        '#type' => 'value',
+        '#value' => TRUE,
+      );
+    }
+
   }
 
   // Load existing active cards for the payment method instance and user.
