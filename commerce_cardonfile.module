@@ -566,7 +566,7 @@ function commerce_cardonfile_form_alter(&$form, &$form_state, $form_id) {
 
     // If the current value for the card selection element is not to use
     // a different credit card, then hide the credit card form elements.
-    if (empty($form_state['values']) || $form_state['values']['commerce_payment']['payment_details']['cardonfile'] !== 'new') {
+    if (empty($form_state['values']['commerce_payment']['payment_details']['cardonfile']) || $form_state['values']['commerce_payment']['payment_details']['cardonfile'] !== 'new') {
       $form['commerce_payment']['payment_details']['credit_card']['#access'] = FALSE;
     }
   }
