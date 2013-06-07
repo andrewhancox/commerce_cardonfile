@@ -645,7 +645,7 @@ function commerce_cardonfile_commerce_checkout_form_submit($form, &$form_state) 
     // Assumes the new card is the current request's last inserted card that
     // matches the user
     foreach ($cof_last_inserts as $card_data) {
-      if ($card_data['uid'] == $account->uid && $card_data['instance_id'] == $instance_id) {
+      if ($card_data->uid == $account->uid && $card_data->instance_id == $instance_id) {
         $card_id_selected = $card_data->card_id;
         break;
       }
@@ -1246,7 +1246,7 @@ function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_
     $unchargeable_cards = array();
     foreach ($possible_cards as $card_id => $possible_card) {
       if (commerce_cardonfile_order_can_charge_card($order, $possible_card) &&
-        (!$instance_is_forced || !isset($possible_card['instance_id']) || $possible_card['instance_id'] == $forced_instance_id)) {
+        (!$instance_is_forced || !isset($possible_card->instance_id) || $possible_card->instance_id == $forced_instance_id)) {
         $card_data = $possible_card;
         break;
       }
@@ -1446,7 +1446,7 @@ function _commerce_cardonfile_current_request_last_inserted($card_data = array()
   $stack = &drupal_static(__FUNCTION__, array());
   $stack_size = 5;
 
-  if (!empty($card_data) && !empty($card_data['card_id'])) {
+  if (!empty($card_data) && !empty($card_data->card_id)) {
     array_unshift($stack, $card_data);
     if (count($stack) > $stack_size) {
       array_pop($stack);
