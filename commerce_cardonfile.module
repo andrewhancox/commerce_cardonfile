@@ -868,6 +868,7 @@ function commerce_cardonfile_set_default_card($card_id, $instance_default_value 
       $query = new EntityFieldQuery();
       $query->entityCondition('entity_type', 'commerce_cardonfile');
       $query->propertyCondition('instance_id', $card->instance_id);
+      $query->propertyCondition('uid', $card->uid);
 
       $result = $query->execute();
 
