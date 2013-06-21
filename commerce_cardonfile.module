@@ -165,6 +165,31 @@ function commerce_cardonfile_entity_info() {
 }
 
 /**
+ * Implements hook_commerce_order_status_info().
+ */
+function commerce_cardonfile_commerce_order_status_info() {
+  $order_statuses = array();
+
+  // Create a new status before Pending so we can generate orders in recurring
+  // processes without intefering with the current cart for the user.
+  $order_statuses['cardonfile_charged'] = array(
+    'name' => 'cardonfile_charged',
+    'title' => t('Charged (Card on File)'),
+    'state' => 'pending',
+    'weight' => 1,
+  );
+
+  $order_statuses['cardonfile_failed'] = array(
+    'name' => 'cardonfile_failed',
+    'title' => t('Failed (Card on File)'),
+    'state' => 'pending',
+    'weight' => -2,
+  );
+
+  return $order_statuses;
+}
+
+/**
  * Returns a list of cof data statuses
  */
 function commerce_cardonfile_statuses() {
