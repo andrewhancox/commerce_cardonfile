@@ -1405,26 +1405,6 @@ function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_
 }
 
 /**
- * Order properties getter callback
- */
-function commerce_cardonfile_order_property_get($entity, array $options, $name) {
-  // Exit if no order owner
-  if (empty($entity->uid)) {
-    return;
-  }
-
-  switch ($name) {
-    case 'chargeable_cards':
-      $cards = _commerce_cardonfile_order_chargeable_cards($entity);
-      return !empty($cards) ? $cards : NULL;
-
-    case 'chargeable_card_preferred':
-      $cards = _commerce_cardonfile_order_chargeable_cards($entity);
-      return !empty($cards) ? reset($cards) : NULL;
-  }
-}
-
-/**
  * Returns TRUE if the card can be charged for the given order
  */
 function commerce_cardonfile_order_can_charge_card($order, $card_data) {
