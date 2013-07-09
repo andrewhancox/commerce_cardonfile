@@ -197,6 +197,7 @@ function commerce_cardonfile_statuses() {
     0 => t('Disabled'),
     1 => t('Active'),
     2 => t('Not deletable'),
+    3 => t('Declined'),
   );
 
   return $statuses;
@@ -258,6 +259,18 @@ function commerce_cardonfile_hook_info() {
   );
 
   return $hooks;
+}
+
+/**
+ * Implements hook_commerce_cardonfile_presave().
+ */
+function commerce_cardonfile_commerce_cardonfile_presave($card_data) {
+  // Set the status back to `Active` when updating a card with `Declined`
+  // status. Also check whether the information has actually changed (only
+  // expiration date can be modified).
+  if (!$card_data->is_new && $card_data->status == 3 && ((int) $card_data->original->card_exp_month != (int) $card_data->card_exp_month || (int) $card_data->original->card_exp_year != (int) $card_data->card_exp_year)) {
+    $card_data->status = 1;
+  }
 }
 
 /**

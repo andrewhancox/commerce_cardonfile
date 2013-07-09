@@ -89,6 +89,11 @@ function commerce_cardonfile_views_default_views() {
   $handler->display->display_options['fields']['commerce_cardonfile_profile']['element_default_classes'] = FALSE;
   $handler->display->display_options['fields']['commerce_cardonfile_profile']['hide_empty'] = TRUE;
   $handler->display->display_options['fields']['commerce_cardonfile_profile']['field_api_classes'] = TRUE;
+  /* Field: Commerce Card on File: Card data status */
+  $handler->display->display_options['fields']['status']['id'] = 'status';
+  $handler->display->display_options['fields']['status']['table'] = 'commerce_cardonfile';
+  $handler->display->display_options['fields']['status']['field'] = 'status';
+  $handler->display->display_options['fields']['status']['label'] = 'Status';
   /* Field: Commerce Card on File: Edit link */
   $handler->display->display_options['fields']['edit_card']['id'] = 'edit_card';
   $handler->display->display_options['fields']['edit_card']['table'] = 'commerce_cardonfile';
@@ -122,6 +127,7 @@ function commerce_cardonfile_views_default_views() {
   $handler->display->display_options['filters']['status']['field'] = 'status';
   $handler->display->display_options['filters']['status']['value'] = array(
     1 => '1',
+    3 => '3',
   );
 
   /* Display: Page */
@@ -330,6 +336,7 @@ function commerce_cardonfile_views_default_views() {
   $handler->display->display_options['filters']['status']['field'] = 'status';
   $handler->display->display_options['filters']['status']['value'] = array(
     1 => '1',
+    3 => '3',
   );
 
   /* Display: Page */
