@@ -71,7 +71,7 @@ function commerce_cardonfile_entity_property_info() {
   $properties['status'] = array(
     'label' => t('Card Status'),
     'description' => t('Status of the card data: inactive (0); active (1); or active and not deletable (2).'),
-    'type' => 'list',
+    'type' => 'integer',
     'options list' => 'commerce_cardonfile_statuses',
     'schema field' => 'status',
   );
