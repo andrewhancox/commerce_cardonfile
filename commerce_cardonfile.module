@@ -12,12 +12,23 @@
 // Card on file process status codes
 define('COMMERCE_COF_PROCESS_CODE_INSUFFICIENT_DATA', 'insufficient');
 define('COMMERCE_COF_PROCESS_CODE_CARD_NA', 'card_na');
-define('COMMERCE_COF_PROCESS_CODE_CARD_EXPIRED', 'card_expired');
 define('COMMERCE_COF_PROCESS_CODE_CARD_NOT_CHARGEABLE', 'card_not_chargeable');
 define('COMMERCE_COF_PROCESS_CODE_METHOD_EMPTY', 'no_method');
 define('COMMERCE_COF_PROCESS_CODE_METHOD_NOT_CAPABLE', 'method_not_capable');
-define('COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE', 'method_failure');
 define('COMMERCE_COF_PROCESS_CODE_METHOD_SUCCESS', 'method_success');
+define('COMMERCE_COF_PROCESS_CODE_CARD_EXPIRED', 'card_expired');
+// For the sake of backwards compatibility, we leave this generic failure status
+// here.
+define('COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE', 'method_failure');
+define('COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_INSUFFICIENT_FUNDS', 'method_failure_insufficient_funds');
+define('COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_LIMIT_EXCEEDED', 'method_failure_limit_exceeded');
+define('COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_CALL_ISSUER', 'method_failure_call_issuer');
+define('COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_TEMPORARY_HOLD', 'method_failure_temporary_hold');
+define('COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GENERIC_DECLINE', 'method_failure_generic_decline');
+define('COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_HARD_DECLINE', 'method_failure_hard_decline');
+define('COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GATEWAY_ERROR', 'method_failure_gateway_error');
+define('COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GATEWAY_UNAVAILABLE', 'method_failure_gateway_unavailable');
+define('COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GATEWAY_CONFIGURATION_ERROR', 'method_failure_gateway_configuration_error');
 
 /**
  * Implements hook_menu().
@@ -1111,18 +1122,55 @@ function commerce_cardonfile_charge_card_response_property_info_callback() {
 }
 
 /**
+ * Implements hook_commerce_payment_transaction_status_info().
+ */
+function commerce_cardonfile_commerce_payment_transaction_status_info() {
+  $statuses = array();
+  foreach (commerce_cardonfile_charge_card_failure_status_code_options() as $status_name => $title) {
+    $statuses[$status_name] = array(
+      'status' => $status_name,
+      'title' => $title,
+      'icon' => drupal_get_path('module', 'commerce_payment') . '/theme/icon-failure.png',
+      'total' => TRUE,
+    );
+  }
+  return $statuses;
+}
+
+/**
  * Returns an options list of processing card response status codes
  */
 function commerce_cardonfile_charge_card_status_code_options() {
   return array(
     COMMERCE_COF_PROCESS_CODE_INSUFFICIENT_DATA => t('Insufficient data'),
     COMMERCE_COF_PROCESS_CODE_CARD_NA => t('No card available'),
-    COMMERCE_COF_PROCESS_CODE_CARD_EXPIRED => t('Card expired'),
     COMMERCE_COF_PROCESS_CODE_CARD_NOT_CHARGEABLE => t('Card not chargeable'),
     COMMERCE_COF_PROCESS_CODE_METHOD_EMPTY => t('Payment method not valid'),
     COMMERCE_COF_PROCESS_CODE_METHOD_NOT_CAPABLE => t('Payment method not capable'),
-    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE => t('Payment method failure'),
     COMMERCE_COF_PROCESS_CODE_METHOD_SUCCESS => t('Payment method success'),
+  ) + commerce_cardonfile_charge_card_failure_status_code_options();
+}
+
+/**
+ * Returns an option list of processing card response failure status codes.
+ *
+ * These statuses are relevant when it comes to dunning management.
+ */
+function commerce_cardonfile_charge_card_failure_status_code_options() {
+  return array(
+    COMMERCE_COF_PROCESS_CODE_CARD_EXPIRED => t('Card expired'),
+    // For the sake of backwards compatibility, we leave this generic failure
+    // status here.
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE => t('Payment method failure'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_INSUFFICIENT_FUNDS => t('Insufficient funds'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_LIMIT_EXCEEDED => t('Limit exceeded'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_CALL_ISSUER => t('Call issuer'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_TEMPORARY_HOLD => t('Temporary hold'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GENERIC_DECLINE => t('Generic decline'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_HARD_DECLINE => t('Hard decline (will never succeed)'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GATEWAY_ERROR => t('Try again/gateway error'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GATEWAY_UNAVAILABLE => t('Issuer or gateway unavailable'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GATEWAY_CONFIGURATION_ERROR => t('Communication/configuration error'),
   );
 }
 
@@ -1163,21 +1211,25 @@ function commerce_cardonfile_charge_card_get_properties($data, array $options, $
  * Returns the error level for a given card processing response array
  */
 function commerce_cardonfile_charge_card_error_level($response) {
-  if (empty($response['code'])) {
-    return 0;
+  $level = 0;
+  $status_codes = commerce_cardonfile_charge_card_status_code_options();
+  if (empty($response['code']) || !isset($status_codes[$response['code']])) {
+    return $level;
   }
 
-  $level = 0;
   switch ($response['code']) {
+    case COMMERCE_COF_PROCESS_CODE_INSUFFICIENT_DATA:
+    case COMMERCE_COF_PROCESS_CODE_CARD_NA:
+      $level = 0;
+      break;
+
     case COMMERCE_COF_PROCESS_CODE_METHOD_EMPTY:
     case COMMERCE_COF_PROCESS_CODE_METHOD_NOT_CAPABLE:
       $level = 1;
       break;
 
-    case COMMERCE_COF_PROCESS_CODE_CARD_EXPIRED:
-    case COMMERCE_COF_PROCESS_CODE_CARD_NOT_CHARGEABLE:
-    case COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE:
-    case COMMERCE_COF_PROCESS_CODE_METHOD_SUCCESS:
+    default:
+      // Every other possible status code falls into this level of error.
       $level = 2;
       break;
   }
@@ -1361,16 +1413,20 @@ function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_
   $method_return = $func($payment_method, $card_data, $order, $charge);
 
   // process return from gateway module
-  if ($method_return === FALSE) {
+  // Backwards compatibility: returned value can be a boolean FALSE or a
+  // specified failure code.
+  if ($method_return === FALSE || !in_array($method_return, array(COMMERCE_PAYMENT_STATUS_SUCCESS, COMMERCE_PAYMENT_STATUS_PENDING))) {
     // Failure
     $response['status'] = FALSE;
-    $response['code'] = COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE;
+    // If the returned value doesn't specify the failure code, save a generic
+    // one.
+    $response['code'] = ($method_return === FALSE) ? COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE : $method_return;
     $response['message'] = 'The payment method @method instance (@instance_id) failed for order @order_id, user @uid, card @card_id, charge amount @charge.';
   }
   else {
     // Success
     $response['status'] = TRUE;
-    $response['code'] = COMMERCE_COF_PROCESS_CODE_METHOD_SUCCESS;
+    $response['code'] = $method_return;
     $response['message'] = 'The payment method  @method instance (@instance_id) was successful for order @order_id, user @uid, card @card_id, charge amount @charge.';
 
     // load a fresh order in case it was modified during method callback
