@@ -34,9 +34,14 @@ function commerce_cardonfile_recurring_default_rules_configuration() {
     'item:var' => 'order',
     'item:label' => t('Current Order'),
   ));
+  $loop->action('commerce_cardonfile_order_select_card', array(
+    'order:select' => 'order',
+  ));
   $loop->action('commerce_cardonfile_order_charge_card', array(
     'order:select' => 'order',
     'charge:select' => 'order:commerce-order-total',
+    'select_card_response:select' => 'select-card-response',
+    'card_data:select' => '',
   ));
 
   $rule->action($loop);

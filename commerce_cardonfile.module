@@ -13,6 +13,7 @@
 define('COMMERCE_COF_PROCESS_CODE_INSUFFICIENT_DATA', 'insufficient');
 define('COMMERCE_COF_PROCESS_CODE_CARD_NA', 'card_na');
 define('COMMERCE_COF_PROCESS_CODE_CARD_NOT_CHARGEABLE', 'card_not_chargeable');
+define('COMMERCE_COF_PROCESS_CODE_CARD_OK', 'card_ok');
 define('COMMERCE_COF_PROCESS_CODE_METHOD_EMPTY', 'no_method');
 define('COMMERCE_COF_PROCESS_CODE_METHOD_NOT_CAPABLE', 'method_not_capable');
 define('COMMERCE_COF_PROCESS_CODE_METHOD_SUCCESS', 'method_success');
@@ -1238,6 +1239,46 @@ function commerce_cardonfile_charge_card_error_level($response) {
 }
 
 /**
+ * Select the card on file that can be charged for an order.
+ */
+function commerce_cardonfile_order_select_card($order, $forced_instance_id = NULL) {
+  $response = array(
+    'code' => COMMERCE_COF_PROCESS_CODE_CARD_NA,
+    'message' => 'No chargeable card on file is available for the order @order_id and user @uid.',
+  );
+
+  if ($possible_cards = commerce_cardonfile_load_user_default_cards($order->uid, $forced_instance_id)) {
+    // Determine any chargeable cards ...
+    $card_data = array();
+    $unchargeable_cards = array();
+    foreach ($possible_cards as $card_id => $possible_card) {
+      if (commerce_cardonfile_order_can_charge_card($order, $possible_card) &&
+        (!$forced_instance_id || !isset($possible_card->instance_id) || $possible_card->instance_id == $forced_instance_id)) {
+        $response['card_chosen'] = $possible_card;
+        $response['code'] = COMMERCE_COF_PROCESS_CODE_CARD_OK;
+        $response['message'] = 'Card can be attempted to charge for @order_id.';
+        break;
+      }
+      else {
+        $unchargeable_cards[$card_id] = $possible_card;
+      }
+    }
+
+    if (empty($response['card_chosen']) && !empty($unchargeable_cards)) {
+      // check first unchargeable card for expiration
+      $unchargeable_card_top = reset($unchargeable_cards);
+      $response['card_chosen'] = $unchargeable_card_top;
+      if (!commerce_cardonfile_validate_card_expiration($unchargeable_card_top)) {
+        $response['code'] = COMMERCE_COF_PROCESS_CODE_CARD_EXPIRED;
+        $response['message'] = 'Card on file has expired for user @uid\'s card @card_id when attempting to process order @order_id.';
+      }
+    }
+  }
+
+  return $response;
+}
+
+/**
  * Process a charge for a given an order
  *
  * Wrapper function for _commerce_cardonfile_order_invoke_process_card() to
@@ -1248,8 +1289,9 @@ function commerce_cardonfile_charge_card_error_level($response) {
  * @param $charge
  *   Charge array of amount, currency_code
  * @param $card_data
- *   The card data array. If not provided, then the chargeable card for the
- *   order will be determined.
+ *   The card data array.
+ * @param $forced_instance_id
+ *   Payment instance ID to enforce the usage of a specific payment gateway
  *
  * @return
  *   TRUE if the order was processed successfully
@@ -1298,6 +1340,25 @@ function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_
     '@charge' => commerce_currency_format($charge['amount'], $charge['currency_code']),
   );
 
+  // exit if no card data provided
+  if (empty($card_data)) {
+    $response['message'] = 'Card data not provided for order @order_id.';
+    return $response;
+  }
+  $response['card_chosen'] = $card_data;
+  if (!commerce_cardonfile_order_can_charge_card($order, $card_data)) {
+    // check for expiration to set a specific code
+    if (!commerce_cardonfile_validate_card_expiration($card_data)) {
+      $response['code'] = COMMERCE_COF_PROCESS_CODE_CARD_EXPIRED;
+      $response['message'] = 'Card on file has expired for user @uid\'s card @card_id when attempting to process order @order_id.';
+    }
+    else {
+      $response['code'] = COMMERCE_COF_PROCESS_CODE_CARD_NOT_CHARGEABLE;
+      $response['message'] = 'Card provided cannot be charged for the order @order_id and user @uid.';
+    }
+    return $response;
+  }
+
   // resolve payment method instance input
   $instance_is_forced = FALSE;
   if (!empty($forced_instance_id)) {
@@ -1313,79 +1374,15 @@ function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_
     $forced_instance_id = NULL;
   }
 
-  // Wrap up the order
-  $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
-
-  // Determine order's chargeable card
-  if (!empty($card_data)) {
-    // A specific card is provided ...
-    $response['card_chosen'] = $card_data;
-
-    if (!commerce_cardonfile_order_can_charge_card($order, $card_data)) {
-      // check for expiration to set a specific code
-      if (!commerce_cardonfile_validate_card_expiration($card_data)) {
-        $response['code'] = COMMERCE_COF_PROCESS_CODE_CARD_EXPIRED;
-        $response['message'] = 'Card on file has expired for user @uid\'s card @card_id when attempting to process order @order_id.';
-      }
-      else {
-        $response['code'] = COMMERCE_COF_PROCESS_CODE_CARD_NOT_CHARGEABLE;
-        $response['message'] = 'Card provided cannot be charged for the order @order_id and user @uid.';
-      }
-
-      return $response;
-    }
-  }
-
-  elseif ($possible_cards = commerce_cardonfile_load_user_default_cards($order->uid, $forced_instance_id)) {
-    // Determine any chargeable cards ...
-    $card_data = array();
-    $unchargeable_cards = array();
-    foreach ($possible_cards as $card_id => $possible_card) {
-      if (commerce_cardonfile_order_can_charge_card($order, $possible_card) &&
-        (!$instance_is_forced || !isset($possible_card->instance_id) || $possible_card->instance_id == $forced_instance_id)) {
-        $card_data = $possible_card;
-        break;
-      }
-      else {
-        $unchargeable_cards[$card_id] = $possible_card;
-      }
-    }
-
-    if (empty($card_data)) {
-      $response['code'] = COMMERCE_COF_PROCESS_CODE_CARD_NA;
-      $response['message'] = 'No chargeable card on file is available for the order @order_id and user @uid.';
-
-      if (!empty($unchargeable_cards)) {
-        // check first unchargeable card for expiration
-        $unchargeable_card_top = reset($unchargeable_cards);
-        $response['card_chosen'] = $unchargeable_card_top;
-        if (!commerce_cardonfile_validate_card_expiration($unchargeable_card_top)) {
-          $response['code'] = COMMERCE_COF_PROCESS_CODE_CARD_EXPIRED;
-          $response['message'] = 'Card on file has expired for user @uid\'s card @card_id when attempting to process order @order_id.';
-        }
-      }
-
-      return $response;
-    }
-
-    // chargeable card found
-    $response['card_chosen'] = $card_data;
-  }
-
-  if (empty($card_data)) {
-    return $response;
-  }
-
-  if (empty($response['card_chosen'])) {
-    $response['card_chosen'] = $card_data;
-  }
-
   if ($instance_is_forced && isset($card_data->instance_id) && $card_data->instance_id != $forced_instance_id) {
     $response['code'] = COMMERCE_COF_PROCESS_CODE_CARD_NOT_CHARGEABLE;
     $response['message'] = 'Card provided is not registered with the requested payment method: Order @order_id, user @uid, payment instance @instance_id';
 
     return $response;
   }
+
+  // Wrap up the order
+  $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
 
   // load payment method
   $payment_method = commerce_payment_method_instance_load($card_data->instance_id);
