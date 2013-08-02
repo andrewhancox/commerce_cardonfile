@@ -98,7 +98,10 @@ function commerce_cardonfile_tokens($type, $tokens, array $data = array(), array
   $type_data = $data[$type];
 
   // Make a pseudo wrapper for card data.
-  $wrapper_info = array('property info' => $token_info[$type]['property_callback']());
+  $wrapper_info = array();
+  if(isset($token_info[$type]['property_callback'])) {
+    $wrapper_info = $token_info[$type]['property_callback']();
+  }
   $wrapper = new EntityStructureWrapper($token_info[$type]['property_type'], $type_data, $wrapper_info);
 
   foreach ($tokens as $name => $original) {
@@ -110,7 +113,7 @@ function commerce_cardonfile_tokens($type, $tokens, array $data = array(), array
       // Default values for the chained tokens handled below.
       switch ($name) {
         case 'owner':
-          if (empty($type_data['uid'])) {
+          if (empty($type_data->uid)) {
             $name = variable_get('anonymous', t('Anonymous'));
           }
           else {
@@ -132,8 +135,8 @@ function commerce_cardonfile_tokens($type, $tokens, array $data = array(), array
     }
   }
 
-  if (isset($type_data['uid']) && $owner_tokens = token_find_with_prefix($tokens, 'owner')) {
-    $owner = user_load($type_data['uid']);
+  if (isset($type_data->uid) && $owner_tokens = token_find_with_prefix($tokens, 'owner')) {
+    $owner = user_load($type_data->uid);
     $replacements += token_generate('user', $owner_tokens, array('user' => $owner), $options);
   }
 
