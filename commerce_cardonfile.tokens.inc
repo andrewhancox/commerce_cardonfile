@@ -74,7 +74,7 @@ function commerce_cardonfile_tokens($type, $tokens, array $data = array(), array
     ),
     'commerce-cardonfile-charge-card-response' => array(
       'property_type' => 'commerce_cardonfile_charge_card_response',
-      'property_callback' => 'commerce_cardonfile_order_charge_card_response_property_info_callback',
+      'property_callback' => 'commerce_cardonfile_charge_card_response_property_info_callback',
     ),
   );
 
