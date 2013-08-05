@@ -1516,7 +1516,7 @@ function _commerce_cardonfile_capable_payment_methods() {
  *   TRUE if payment method is capable of card on file
  */
 function _commerce_cardonfile_capable_payment_method_check($payment_method) {
-  return !empty($payment_method['cardonfile']) ? $payment_method['cardonfile'] : FALSE;
+  return !empty($payment_method['settings']['cardonfile']) ? $payment_method['settings']['cardonfile'] : FALSE;
 }
 
 /**
