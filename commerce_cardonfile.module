@@ -538,8 +538,9 @@ function commerce_cardonfile_form_alter(&$form, &$form_state, $form_id) {
   // enabled (via the cardonfile boolean in its info array).
   $payment_method = commerce_payment_method_instance_load($instance_id);
 
-  // Exit if payment method is not capable of card on file
-  if (!_commerce_cardonfile_capable_payment_method_check($payment_method)) {
+  // Exit if payment method is not capable of Card on File, or Card on File
+  // functionality is disabled in the payment method instance.
+  if (!_commerce_cardonfile_capable_payment_method_check($payment_method) || (isset($payment_method['settings']['cardonfile']) && !$payment_method['settings']['cardonfile'])) {
     return;
   }
 
@@ -1516,7 +1517,7 @@ function _commerce_cardonfile_capable_payment_methods() {
  *   TRUE if payment method is capable of card on file
  */
 function _commerce_cardonfile_capable_payment_method_check($payment_method) {
-  return !empty($payment_method['settings']['cardonfile']) ? $payment_method['settings']['cardonfile'] : FALSE;
+  return !empty($payment_method['cardonfile']) ? $payment_method['cardonfile'] : FALSE;
 }
 
 /**
