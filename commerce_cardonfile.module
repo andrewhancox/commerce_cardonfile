@@ -124,6 +124,19 @@ function commerce_cardonfile_menu() {
 }
 
 /**
+ * Implements hook_admin_paths().
+ */
+function commerce_cardonfile_admin_paths() {
+  // The user module defines user/*/edit as an admin path, so we must explicitly
+  // declare user/*/cards/* as non-admin paths.
+  $paths = array(
+    'user/*/cards/*' => FALSE,
+  );
+
+  return $paths;
+}
+
+/**
  * Implements of hook_entity_info().
  */
 function commerce_cardonfile_entity_info() {
