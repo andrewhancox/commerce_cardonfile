@@ -15,7 +15,7 @@
  *   A page title of the format "Card ##".
  */
 function commerce_cardonfile_card_title($card_data) {
-  return t('Card @card_id', array('@card_id' => $card_data->card_type . ' - ' . $card_data->card_number));
+  return t('@type ending in @number', array('@type' => $card_data->card_type, '@number' => $card_data->card_number));
 }
 
 /**
@@ -34,7 +34,7 @@ function commerce_cardonfile_card_view($card_data, $view_mode) {
  */
 function commerce_cardonfile_update($card_data) {
   // Set the title of the page.
-  drupal_set_title(t('Update your credit card data'));
+  drupal_set_title(t('Update your @type ending in @number', array('@type' => $card_data->card_type, '@number' => $card_data->card_number)));
   $payment_method = commerce_payment_method_instance_load($card_data->instance_id);
 
   if ($form_calback = commerce_cardonfile_payment_method_callback($payment_method, 'update form callback')) {
@@ -141,28 +141,28 @@ function commerce_cardonfile_delete_form($form, &$form_state, $card_data) {
 
   $card_types = commerce_payment_credit_card_types();
 
-  $form['card_holder'] = array(
-    '#type' => 'item',
-    '#title' => t('Card holder'),
-    '#markup' => $card_data->card_name,
-  );
-
   $form['card_type'] = array(
     '#type' => 'item',
-    '#title' => t('Card Type'),
+    '#title' => t('Card type'),
     '#markup' => !empty($card_types[$card_data->card_type]) ? $card_types[$card_data->card_type] : $card_data->card_type,
   );
 
   $form['card_number'] = array(
     '#type' => 'item',
-    '#title' => t('Card Number'),
+    '#title' => t('Card number'),
     '#markup' => 'XXXX - XXXX - XXXX - ' . $card_data->card_number,
   );
 
   $form['card_expire'] = array(
     '#type' => 'item',
-    '#title' => t('Card Expires'),
+    '#title' => t('Expires'),
     '#markup' => $card_data->card_exp_month . ' / ' . $card_data->card_exp_year,
+  );
+
+  $form['card_holder'] = array(
+    '#type' => 'item',
+    '#title' => t('Card holder'),
+    '#markup' => $card_data->card_name,
   );
 
   $form['card_data'] = array(
@@ -172,7 +172,7 @@ function commerce_cardonfile_delete_form($form, &$form_state, $card_data) {
 
   return confirm_form(
     $form,
-    t('Are you sure you want to delete this card ?'),
+    t('Are you sure you want to delete this card?'),
     'user/' . $card_data->uid . '/cards',
     theme('card_data_overview', array('card_data' => $card_data)),
     t('Delete')
