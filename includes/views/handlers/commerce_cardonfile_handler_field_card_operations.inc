@@ -52,6 +52,7 @@ class commerce_cardonfile_handler_field_card_operations extends views_handler_fi
         }
       }
 
+      drupal_add_css(drupal_get_path('module', 'commerce_cardonfile') . '/theme/commerce_cardonfile.admin.css');
       return theme('links', array('links' => $links, 'attributes' => array('class' => array('links', 'inline', 'operations'))));
     }
   }
