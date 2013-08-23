@@ -24,7 +24,7 @@ class commerce_cardonfile_handler_field_card_operations extends views_handler_fi
 
     $form['add_destination'] = array(
       '#type' => 'checkbox',
-      '#title' => t('Add a destination parameter to edit and delete operation links so users return to this View on form submission.'),
+      '#title' => t('Add a destination parameter to operation links so users return to this View on form submission.'),
       '#default_value' => $this->options['add_destination'],
     );
   }
@@ -37,10 +37,9 @@ class commerce_cardonfile_handler_field_card_operations extends views_handler_fi
   function render($values) {
     $card_id = $this->get_value($values, 'card_id');
     $uid = $this->get_value($values, 'uid');
-    $root_contextual_link_path = 'user/' . $uid . '/cards';
 
     // Get the operations links.
-    $links = menu_contextual_links('commerce-cardonfile', 'user/' . $uid . '/cards/', array($card_id));
+    $links = menu_contextual_links('commerce-cardonfile', 'user/' . $uid . '/cards', array($card_id));
 
     if (!empty($links)) {
       // Add the destination to the links if specified.
