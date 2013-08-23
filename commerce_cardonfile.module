@@ -62,11 +62,15 @@ function commerce_cardonfile_menu() {
     'file' => 'includes/commerce_cardonfile.pages.inc',
   );
 
+  // Note that this tab is hidden by its access callback by default. To enable a
+  // view page, implement hook_menu_alter() and unset this tab's access callback
+  // to fallback to the parent menu item's access callback.
   $items['user/%user/cards/%commerce_cardonfile/view'] = array(
     'title' => 'View',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    'access callback' => 'commerce_cardonfile_card_view_access',
   );
 
   // create paths for each payment method
@@ -121,6 +125,13 @@ function commerce_cardonfile_menu() {
   );
 
   return $items;
+}
+
+/**
+ * Access callback: hide the "view" tab for card data by default.
+ */
+function commerce_cardonfile_card_view_access() {
+  return FALSE;
 }
 
 /**
