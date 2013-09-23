@@ -87,10 +87,10 @@ function commerce_cardonfile_menu() {
         'payment_method' => $payment_method['method_id'],
       ));
       $items['user/%user/cards/add/' . drupal_hash_base64($instance_id)] = array(
-        'title' => 'Add a !name',
+        'title' => 'Add a card for payments with !name',
         'title arguments' => array('!name' => $payment_method['display_title']),
-        'page callback' => 'commerce_cardonfile_create_page',
-        'page arguments' => array($new_card_data, 1),
+        'page callback' => 'commerce_cardonfile_card_form_page',
+        'page arguments' => array('create', $new_card_data),
         'access callback' => 'commerce_cardonfile_access',
         'access arguments' => array('create', $new_card_data, 1),
         'type' => MENU_LOCAL_ACTION,
@@ -102,8 +102,8 @@ function commerce_cardonfile_menu() {
   $items['user/%user/cards/%commerce_cardonfile/edit'] = array(
     'title' => 'Edit',
     'description' => 'Update a stored payment method.',
-    'page callback' => 'commerce_cardonfile_update',
-    'page arguments' => array(3),
+    'page callback' => 'commerce_cardonfile_card_form_page',
+    'page arguments' => array('update', 3),
     'access callback' => 'commerce_cardonfile_access',
     'access arguments' => array('update', 3),
     'type' => MENU_LOCAL_TASK,
@@ -451,16 +451,20 @@ function commerce_cardonfile_access($op = 'view', $card_data = NULL, $account = 
     return TRUE;
   }
 
+  // ALLOW access to create new cards to any user with the 'create own card data'
+  // permission when they are accessing to their own profile.
+  if ($op == 'create' && user_access('create own card data') && $account->uid == $user->uid) {
+    return TRUE;
+  }
+
   // DENY if callback does NOT exist for specific operations
   if (empty($op_callback)) {
     return FALSE;
   }
 
   // ALLOW access for users with permission to manage their own card data.
-  if (!empty($card_data->uid)) {
-    if (!empty($user->uid) && $user->uid == $card_data->uid && user_access("$op own card data")) {
-      return TRUE;
-    }
+  if ($op != 'create' && user_access("$op own card data") && !empty($card_data->uid) && $account->uid == $card_data->uid) {
+    return TRUE;
   }
 
   // DENY by default
@@ -468,14 +472,20 @@ function commerce_cardonfile_access($op = 'view', $card_data = NULL, $account = 
 }
 
 /**
- * Determines if the current user has access to the account's stored payments.
+ * Determines if the current user has access to the account's stored cards.
  */
 function commerce_cardonfile_user_access($account) {
   global $user;
 
-  // Grant access for any user with administer permission.
-  if (user_access('administer card data')) {
+  if (user_access('administer card data') || user_access('view any card data')) {
+    // Grant access for any user with administer permission or view permission
+    // to any cards.
     return TRUE;
+  }
+  elseif ($account->uid != $user->uid) {
+    // Otherwise deny the access if the account doesn't belong to the currently
+    // logged in user.
+    return FALSE;
   }
 
   // create a stub data array for access checks
@@ -489,7 +499,7 @@ function commerce_cardonfile_user_access($account) {
   }
 
   // load active cards
-  $stored_cards = commerce_cardonfile_load_multiple($account->uid, NULL, TRUE);
+  $stored_cards = commerce_cardonfile_load_multiple_by_uid($account->uid);
 
   // if no cards, then check create access
   if (empty($stored_cards)) {
@@ -501,7 +511,7 @@ function commerce_cardonfile_user_access($account) {
       }
 
       foreach ($payment_method_instances as $instance_id => $payment_method) {
-        $card_data_stub['instance_id'] = $instance_id;
+        $card_data_stub->instance_id = $instance_id;
         if (commerce_cardonfile_access('create', $card_data_stub, $account)) {
           return TRUE;
         }
@@ -898,11 +908,9 @@ function commerce_cardonfile_load_user_default_cards($uid, $instance_id = NULL) 
  * @return Ambigous <A, boolean>
  */
 function commerce_cardonfile_new(array $values = array()) {
-  global $user;
-
   $values += array(
     'card_id' => NULL,
-    'uid' => $user->uid,
+    'uid' => 0,
     'payment_method' => '',
     'instance_id' => '',
     'remote_id' => '',
