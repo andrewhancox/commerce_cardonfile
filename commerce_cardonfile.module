@@ -90,7 +90,7 @@ function commerce_cardonfile_menu() {
         'title' => 'Add a card for payments with !name',
         'title arguments' => array('!name' => $payment_method['display_title']),
         'page callback' => 'commerce_cardonfile_card_form_page',
-        'page arguments' => array('create', $new_card_data),
+        'page arguments' => array('create', $new_card_data, 1),
         'access callback' => 'commerce_cardonfile_access',
         'access arguments' => array('create', $new_card_data, 1),
         'type' => MENU_LOCAL_ACTION,

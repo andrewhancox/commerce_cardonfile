@@ -28,8 +28,7 @@ function commerce_cardonfile_card_view($card_data, $view_mode) {
 /**
  * Returns the appropriate Card on File form.
  */
-function commerce_cardonfile_card_form_page($op, $card_data) {
-  global $user;
+function commerce_cardonfile_card_form_page($op, $card_data, $account) {
   $payment_method = commerce_payment_method_instance_load($card_data->instance_id);
 
   if ($op == 'update') {
@@ -45,10 +44,10 @@ function commerce_cardonfile_card_form_page($op, $card_data) {
   }
   else {
     drupal_set_title(t('Add new credit card'));
-    // Card data was initialized with the anonymous user as its owner. Set it
-    // here to the current user, so that the form will receive the complete
-    // information that is needed to save the card.
-    $card_data->uid = $user->uid;
+    // Card data was initialized with the anonymous user as its owner. Set the
+    // owner here to the user from the menu item, so that the form will receive
+    // the complete information that is needed to save the card.
+    $card_data->uid = $account->uid;
   }
 
   if ($form_callback = commerce_cardonfile_payment_method_callback($payment_method, $op . ' form callback')) {
