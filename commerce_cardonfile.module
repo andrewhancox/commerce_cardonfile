@@ -463,7 +463,7 @@ function commerce_cardonfile_access($op = 'view', $card_data = NULL, $account = 
   }
 
   // ALLOW access for users with permission to manage their own card data.
-  if ($op != 'create' && user_access("$op own card data") && !empty($card_data->uid) && $account->uid == $card_data->uid) {
+  if ($op != 'create' && user_access("$op own card data") && !empty($card_data->uid) && $user->uid == $card_data->uid) {
     return TRUE;
   }
 
