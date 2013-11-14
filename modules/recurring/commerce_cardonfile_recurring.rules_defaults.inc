@@ -74,6 +74,7 @@ function commerce_cardonfile_recurring_default_rules_configuration() {
   $rule = rules_reaction_rule();
 
   $rule->label = 'Unsuccessful recurring order card charge — soft decline';
+  $rule->weight = 10;
   $rule->requires = array(
     'rules',
     'commerce_cardonfile',
@@ -108,6 +109,7 @@ function commerce_cardonfile_recurring_default_rules_configuration() {
   $rule = rules_reaction_rule();
 
   $rule->label = 'Unsuccessful recurring order card charge — hard decline';
+  $rule->weight = 10;
   $rule->requires = array(
     'rules',
     'commerce_cardonfile',
