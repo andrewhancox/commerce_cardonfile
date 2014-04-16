@@ -48,6 +48,7 @@ function commerce_cardonfile_card_form_page($op, $card_data, $account) {
     // owner here to the user from the menu item, so that the form will receive
     // the complete information that is needed to save the card.
     $card_data->uid = $account->uid;
+    $card_data->created = REQUEST_TIME;
   }
 
   if ($form_callback = commerce_cardonfile_payment_method_callback($payment_method, $op . ' form callback')) {
