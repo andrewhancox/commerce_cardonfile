@@ -255,9 +255,9 @@ function commerce_cardonfile_rules_payment_instance_charge_options_list() {
 /**
  * Rules action callback for commerce_cardonfile_order_select_card
  */
-function commerce_cardonfile_rules_action_order_select_card($account, $forced_instance_id = NULL) {
+function commerce_cardonfile_rules_action_order_select_card($order, $forced_instance_id = NULL) {
 
-  $response = commerce_cardonfile_order_select_card($account, $forced_instance_id);
+  $response = commerce_cardonfile_order_select_card($order, $forced_instance_id);
 
   return array('select_card_response' => $response);
 }
