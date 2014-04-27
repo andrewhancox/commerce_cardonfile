@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Provides metadata for the commerce cardonfile entity.
+ * Provides Entity metadata integration.
  */
 
 /**
@@ -11,74 +11,79 @@
 function commerce_cardonfile_entity_property_info() {
   $info = array();
 
-  // Add meta-data about the basic commerce_product properties.
   $properties = &$info['commerce_cardonfile']['properties'];
-
   $properties['card_id'] = array(
     'label' => t('Card ID'),
-    'description' => t('Serial numeric ID of the truncated card data in the local database.'),
+    'description' => t('The internal numeric ID of the card.'),
     'type' => 'integer',
     'schema field' => 'card_id',
   );
   $properties['payment_method'] = array(
     'label' => t('Payment method'),
-    'description' => t('The payment method method_id for this transaction.'),
+    'description' => t('The method_id of the payment method that stored the card.'),
     'type' => 'text',
     'setter callback' => 'entity_property_verbatim_set',
     'schema field' => 'payment_method',
   );
   $properties['instance_id'] = array(
     'label' => t('Instance ID'),
-    'description' => t('The payment method instance ID for this transaction.'),
+    'description' => t('The instance_id of the payment method that stored the card.'),
     'type' => 'text',
     'setter callback' => 'entity_property_verbatim_set',
     'schema field' => 'instance_id',
   );
   $properties['remote_id'] = array(
     'label' => t('Remote ID'),
-    'description' => t('The remote ID to the full card data at the payment gateway.'),
+    'description' => t('The id of the card at the payment gateway.'),
     'type' => 'text',
     'setter callback' => 'entity_property_verbatim_set',
     'schema field' => 'remote_id',
   );
   $properties['card_type'] = array(
     'label' => t('Card type'),
-    'description' => t('The credit card type.'),
+    'description' => t('The card type.'),
     'type' => 'text',
     'setter callback' => 'entity_property_verbatim_set',
     'schema field' => 'card_type',
   );
   $properties['card_name'] = array(
     'label' => t('Card name'),
-    'description' => t('The name on the credit card.'),
+    'description' => t('The name on the card.'),
     'type' => 'text',
     'setter callback' => 'entity_property_verbatim_set',
     'schema field' => 'card_name',
   );
   $properties['card_number'] = array(
     'label' => t('Card number'),
-    'description' => t('Truncated number of the credit card (last 4 digits).'),
+    'description' => t('Truncated card number (last 4 digits).'),
     'type' => 'text',
     'setter callback' => 'entity_property_verbatim_set',
     'schema field' => 'card_number',
   );
   $properties['card_exp_month'] = array(
     'label' => t('Card expiration month'),
-    'description' => t('Expiration month of the credit card.'),
+    'description' => t('Expiration month.'),
     'type' => 'integer',
     'setter callback' => 'entity_property_verbatim_set',
     'schema field' => 'card_exp_month',
   );
   $properties['card_exp_year'] = array(
     'label' => t('Card expiration year'),
-    'description' => t('Expiration year of the credit card.'),
+    'description' => t('Expiration year.'),
     'type' => 'integer',
     'setter callback' => 'entity_property_verbatim_set',
     'schema field' => 'card_exp_year',
   );
+  $properties['instance_default'] = array(
+    'label' => t('Instance default'),
+    'description' => t('Whether this is the default card for this payment method instance.'),
+    'type' => 'boolean',
+    'setter callback' => 'entity_property_verbatim_set',
+    'schema field' => 'instance_default',
+  );
   $properties['status'] = array(
     'label' => t('Card Status'),
-    'description' => t('Status of the card data: inactive (0); active (1); or active and not deletable (2).'),
+    'description' => t('The card status.'),
     'type' => 'integer',
     'setter callback' => 'entity_property_verbatim_set',
     'options list' => 'commerce_cardonfile_statuses',
@@ -98,17 +103,9 @@ function commerce_cardonfile_entity_property_info() {
     'setter callback' => 'entity_property_verbatim_set',
     'schema field' => 'changed',
   );
-  $properties['instance_default'] = array(
-    'label' => t('Instance default'),
-    'description' => t('Boolean indicating the default card for a payment instance ID.'),
-    'type' => 'boolean',
-    'setter callback' => 'entity_property_verbatim_set',
-    'schema field' => 'instance_default',
-  );
-  // User entity.
   $properties['user'] = array(
     'label' => t('User'),
-    'description' => t("Owner's user account."),
+    'description' => t('The card owner.'),
     'type' => 'user',
     'setter callback' => 'entity_property_verbatim_set',
     'schema field' => 'uid',
