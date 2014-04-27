@@ -154,11 +154,10 @@ function commerce_cardonfile_entity_info() {
   $data = array();
 
   $data['commerce_cardonfile'] = array(
-    'label' => t('Commerce Card Data'),
-    'entity class' => 'Entity',
+    'label' => t('Commerce Card on File'),
+    'entity class' => 'CommerceCardOnFile',
     'controller class' => 'EntityAPIController',
     'base table' => 'commerce_cardonfile',
-    'locking mode' => 'pessimistic',
     'fieldable' => TRUE,
     'entity keys' => array(
       'id' => 'card_id',
@@ -184,17 +183,9 @@ function commerce_cardonfile_entity_info() {
         'custom settings' => FALSE,
       ),
     ),
-    'admin' => array(
-      'path' => 'admin/commerce/config/cardonfile',
-      'access arguments' => array('configure cardonfile'),
-    ),
     'access callback' => 'commerce_cardonfile_access',
     'token type' => 'commerce-cardonfile',
     'metadata controller class' => '',
-    'permission labels' => array(
-      'singular' => t('card data'),
-      'plural' => t('card data'),
-    ),
   );
 
   return $data;
@@ -352,18 +343,6 @@ function commerce_cardonfile_hook_info() {
   );
 
   return $hooks;
-}
-
-/**
- * Implements hook_commerce_cardonfile_presave().
- */
-function commerce_cardonfile_commerce_cardonfile_presave($card_data) {
-  // Set the status back to `Active` when updating a card with `Declined`
-  // status. Also check whether the information has actually changed (only
-  // expiration date can be modified).
-  if (!$card_data->is_new && $card_data->status == 3 && ((int) $card_data->original->card_exp_month != (int) $card_data->card_exp_month || (int) $card_data->original->card_exp_year != (int) $card_data->card_exp_year)) {
-    $card_data->status = 1;
-  }
 }
 
 /**
@@ -956,21 +935,6 @@ function commerce_cardonfile_load_user_default_cards($uid, $instance_id = NULL) 
  * @return Ambigous <A, boolean>
  */
 function commerce_cardonfile_new(array $values = array()) {
-  $values += array(
-    'card_id' => NULL,
-    'uid' => 0,
-    'payment_method' => '',
-    'instance_id' => '',
-    'remote_id' => '',
-    'card_type' => '',
-    'card_name' => '',
-    'card_number' => '',
-    'card_exp_month' => '',
-    'card_exp_year' => '',
-    'status' => 1,
-    'created' => REQUEST_TIME,
-  );
-
   return entity_create('commerce_cardonfile', $values);
 }
 

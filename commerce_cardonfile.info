@@ -9,8 +9,8 @@ dependencies[] = commerce_customer
 dependencies[] = entity
 core = 7.x
 
-; Simple tests
-; files[] = tests/commerce_cardonfile.test
+; Entity class
+files[] = includes/commerce_cardonfile.entity.inc
 
 ; Views handlers
 files[] = includes/views/handlers/commerce_cardonfile_handler_field_card.inc
