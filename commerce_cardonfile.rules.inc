@@ -265,10 +265,10 @@ function commerce_cardonfile_rules_action_order_select_card($order, $forced_inst
 /**
  * Rules action callback for commerce_cardonfile_order_charge_card
  */
-function commerce_cardonfile_rules_action_order_charge_card($order, $charge = NULL, $select_card_response = NULL, $card_data = NULL, $forced_instance_id = NULL) {
+function commerce_cardonfile_rules_action_order_charge_card($order, $charge = NULL, $select_card_response = NULL, $card = NULL, $forced_instance_id = NULL) {
   // This action needs either the card data provided or a response returned by
   // the `Select card on file to charge` action.
-  if (empty($select_card_response) && empty($card_data)) {
+  if (empty($select_card_response) && empty($card)) {
     // Return an error wrapped in a response if none of them are provided.
     $response = array(
       'code' => COMMERCE_COF_PROCESS_CODE_INSUFFICIENT_DATA,
@@ -280,11 +280,11 @@ function commerce_cardonfile_rules_action_order_charge_card($order, $charge = NU
 
   // If provided, card data will be used regardless the response returned by
   // the `Select card on file to charge` action.
-  if (empty($card_data)) {
+  if (empty($card)) {
     // Card data is not provided, so let's use the response by the
     // aforementioned action. Make sure it found a chargeable card.
     if ($select_card_response['code'] == COMMERCE_COF_PROCESS_CODE_CARD_OK) {
-      $card_data = $select_card_response['card_chosen'];
+      $card = $select_card_response['card_chosen'];
     }
     else {
       rules_invoke_all('commerce_cardonfile_charge_failed', NULL, $order, $charge, $select_card_response);
@@ -292,6 +292,6 @@ function commerce_cardonfile_rules_action_order_charge_card($order, $charge = NU
     }
   }
 
-  $response = commerce_cardonfile_order_charge_card($order, $charge, $card_data, $forced_instance_id);
+  $response = commerce_cardonfile_order_charge_card($order, $charge, $card, $forced_instance_id);
   return array('charge_card_response' => $response);
 }

@@ -408,15 +408,15 @@ function commerce_cardonfile_permission() {
  * @param $op
  *   The operation being performed. One of 'view', 'edit', 'update', 'manage',
  *   'create' or 'delete'.
- * @param $card_data
- *   The card data array
+ * @param $card
+ *   The card entity.
  * @param $account
  *   The user account for the card access
  *
  * @return
  *   TRUE if the current user has access
  */
-function commerce_cardonfile_access($op = 'view', $card_data = NULL, $account = NULL) {
+function commerce_cardonfile_access($op = 'view', $card = NULL, $account = NULL) {
   global $user;
 
   $account = isset($account) ? $account : $user;
@@ -430,8 +430,8 @@ function commerce_cardonfile_access($op = 'view', $card_data = NULL, $account = 
   $payment_method = array();
   $payment_rule = NULL;
 
-  if (!empty($card_data->instance_id)) {
-    $payment_method = commerce_payment_method_instance_load($card_data->instance_id);
+  if (!empty($card->instance_id)) {
+    $payment_method = commerce_payment_method_instance_load($card->instance_id);
     if (!empty($payment_method)) {
       // Explode the method key into its component parts.
       list($payment_method_id, $instance_rule_name) = explode('|', $payment_method['instance_id']);
@@ -490,7 +490,7 @@ function commerce_cardonfile_access($op = 'view', $card_data = NULL, $account = 
   }
 
   // ALLOW access for users with permission to manage their own card data.
-  if ($op != 'create' && user_access("$op own card data") && !empty($card_data->uid) && $account->uid == $card_data->uid) {
+  if ($op != 'create' && user_access("$op own card data") && !empty($card->uid) && $account->uid == $card->uid) {
     return TRUE;
   }
 
@@ -516,12 +516,12 @@ function commerce_cardonfile_user_access($account) {
   }
 
   // create a stub data array for access checks
-  $card_data_stub = commerce_cardonfile_new(array(
+  $card_stub = commerce_cardonfile_new(array(
     'uid' => $account->uid,
   ));
 
   // DENY if the user DOES NOT have view access
-  if (!commerce_cardonfile_access('view', $card_data_stub, $account)) {
+  if (!commerce_cardonfile_access('view', $card_stub, $account)) {
     return FALSE;
   }
 
@@ -538,8 +538,8 @@ function commerce_cardonfile_user_access($account) {
       }
 
       foreach ($payment_method_instances as $instance_id => $payment_method) {
-        $card_data_stub->instance_id = $instance_id;
-        if (commerce_cardonfile_access('create', $card_data_stub, $account)) {
+        $card_stub->instance_id = $instance_id;
+        if (commerce_cardonfile_access('create', $card_stub, $account)) {
           return TRUE;
         }
       }
@@ -792,13 +792,13 @@ function commerce_cardonfile_element_options_list($stored_cards, $element_type =
   commerce_cardonfile_load_credit_card_helpers();
   $card_types = commerce_payment_credit_card_types();
 
-  foreach ($stored_cards as $card_id => $card_data) {
+  foreach ($stored_cards as $card_id => $card) {
     $replacements = array(
-      '@card_type' => !empty($card_types[$card_data->card_type]) ? $card_types[$card_data->card_type] : $card_data->card_type,
-      '@card_number' => $card_data->card_number,
-      '@card_exp_month' => str_pad($card_data->card_exp_month, 2, '0', STR_PAD_LEFT),
-      '@card_exp_year' => $card_data->card_exp_year,
-      '@instance_default' => !empty($card_data->instance_default) ? t('(default)') : '',
+      '@card_type' => !empty($card_types[$card->card_type]) ? $card_types[$card->card_type] : $card->card_type,
+      '@card_number' => $card->card_number,
+      '@card_exp_month' => str_pad($card->card_exp_month, 2, '0', STR_PAD_LEFT),
+      '@card_exp_year' => $card->card_exp_year,
+      '@instance_default' => !empty($card->instance_default) ? t('(default)') : '',
       );
     $options[$card_id] = t('@card_type ending @card_number, Expires @card_exp_month/@card_exp_year @instance_default', $replacements);;
   }
@@ -941,13 +941,13 @@ function commerce_cardonfile_new(array $values = array()) {
 /**
  * Saves an array of card data.
  *
- * @param $card_data
- *   A cardonfile object
+ * @param $card
+ *   The card entity.
  *
  * @return
  *
  */
-function commerce_cardonfile_save($card_data, $billing_profile = NULL) {
+function commerce_cardonfile_save($card, $billing_profile = NULL) {
 
   if (!empty($billing_profile)) {
 
@@ -957,10 +957,10 @@ function commerce_cardonfile_save($card_data, $billing_profile = NULL) {
     commerce_customer_profile_save($billing_profile);
 
     // Add the billing profile to the card on file.
-    $card_data->commerce_cardonfile_profile[LANGUAGE_NONE][0]['profile_id'] = $billing_profile->profile_id;
+    $card->commerce_cardonfile_profile[LANGUAGE_NONE][0]['profile_id'] = $billing_profile->profile_id;
   }
 
-  return entity_save('commerce_cardonfile', $card_data);
+  return entity_save('commerce_cardonfile', $card);
 }
 
 /**
@@ -1009,12 +1009,12 @@ function commerce_cardonfile_delete($card_id) {
 /**
  * Returns TRUE if the card data has NOT expired
  */
-function commerce_cardonfile_validate_card_expiration($card_data) {
-  if (!isset($card_data->card_exp_month) || !isset($card_data->card_exp_year)) {
+function commerce_cardonfile_validate_card_expiration($card) {
+  if (!isset($card->card_exp_month) || !isset($card->card_exp_year)) {
     return FALSE;
   }
 
-  return commerce_cardonfile_validate_exp_date($card_data->card_exp_month, $card_data->card_exp_year);
+  return commerce_cardonfile_validate_exp_date($card->card_exp_month, $card->card_exp_year);
 }
 
 /**
@@ -1043,24 +1043,24 @@ function commerce_cardonfile_payment_method_available_callbacks() {
 /**
  * Returns TRUE if the card can be charged
  */
-function commerce_cardonfile_can_charge($card_data) {
+function commerce_cardonfile_can_charge($card) {
   // DENY if card is disabled
-  if (empty($card_data->status)) {
+  if (empty($card->status)) {
     return FALSE;
   }
 
   // DENY if there is no payment method instance
-  if (empty($card_data->instance_id)) {
+  if (empty($card->instance_id)) {
     return FALSE;
   }
 
   // DENY if card is expired
-  if (!commerce_cardonfile_validate_card_expiration($card_data)) {
+  if (!commerce_cardonfile_validate_card_expiration($card)) {
     return FALSE;
   }
 
   // load payment method related to the card
-  $payment_method = commerce_payment_method_instance_load($card_data->instance_id);
+  $payment_method = commerce_payment_method_instance_load($card->instance_id);
 
   // DENY if not a valid payment method
   if (empty($payment_method)) {
@@ -1303,7 +1303,6 @@ function commerce_cardonfile_order_select_card($order, $forced_instance_id = NUL
 
   if ($possible_cards = commerce_cardonfile_load_user_default_cards($order->uid, $forced_instance_id)) {
     // Determine any chargeable cards ...
-    $card_data = array();
     $unchargeable_cards = array();
     foreach ($possible_cards as $card_id => $possible_card) {
       if (commerce_cardonfile_order_can_charge_card($order, $possible_card) &&
@@ -1342,15 +1341,15 @@ function commerce_cardonfile_order_select_card($order, $forced_instance_id = NUL
  *   An order object
  * @param $charge
  *   Charge array of amount, currency_code
- * @param $card_data
- *   The card data array.
+ * @param $card
+ *   The card entity.
  * @param $forced_instance_id
  *   Payment instance ID to enforce the usage of a specific payment gateway
  *
  * @return
  *   TRUE if the order was processed successfully
  */
-function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_data = array(), $forced_instance_id = NULL) {
+function commerce_cardonfile_order_charge_card($order, $charge = array(), $card = NULL, $forced_instance_id = NULL) {
 
   $response = array(
     'status' => FALSE,
@@ -1395,14 +1394,14 @@ function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_
   );
 
   // exit if no card data provided
-  if (empty($card_data)) {
+  if (empty($card)) {
     $response['message'] = 'Card data not provided for order @order_id.';
     return $response;
   }
-  $response['card_chosen'] = $card_data;
-  if (!commerce_cardonfile_order_can_charge_card($order, $card_data)) {
+  $response['card_chosen'] = $card;
+  if (!commerce_cardonfile_order_can_charge_card($order, $card)) {
     // check for expiration to set a specific code
-    if (!commerce_cardonfile_validate_card_expiration($card_data)) {
+    if (!commerce_cardonfile_validate_card_expiration($card)) {
       $response['code'] = COMMERCE_COF_PROCESS_CODE_CARD_EXPIRED;
       $response['message'] = 'Card on file has expired for user @uid\'s card @card_id when attempting to process order @order_id.';
     }
@@ -1428,7 +1427,7 @@ function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_
     $forced_instance_id = NULL;
   }
 
-  if ($instance_is_forced && isset($card_data->instance_id) && $card_data->instance_id != $forced_instance_id) {
+  if ($instance_is_forced && isset($card->instance_id) && $card->instance_id != $forced_instance_id) {
     $response['code'] = COMMERCE_COF_PROCESS_CODE_CARD_NOT_CHARGEABLE;
     $response['message'] = 'Card provided is not registered with the requested payment method: Order @order_id, user @uid, payment instance @instance_id';
 
@@ -1439,7 +1438,7 @@ function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_
   $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
 
   // load payment method
-  $payment_method = commerce_payment_method_instance_load($card_data->instance_id);
+  $payment_method = commerce_payment_method_instance_load($card->instance_id);
   if (empty($payment_method)) {
     $response['code'] = COMMERCE_COF_PROCESS_CODE_METHOD_EMPTY;
     $response['message'] = 'The payment method instance (@instance_id) is not available on the system.';
@@ -1461,7 +1460,7 @@ function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_
   }
 
   // invoke callback function
-  $method_return = $func($payment_method, $card_data, $order, $charge);
+  $method_return = $func($payment_method, $card, $order, $charge);
 
   // process return from gateway module
   // Backwards compatibility: returned value can be a boolean FALSE or a
@@ -1487,8 +1486,8 @@ function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_
     // Store the last processed card on the order card reference field
     if (isset($order_wrapper->commerce_cardonfile)) {
       $order_ref_card_id = $order_wrapper->commerce_cardonfile->value();
-      if (empty($order_ref_card_id) || $order_ref_card_id != $card_data->card_id) {
-        $order_wrapper->commerce_cardonfile = array('card_id' => $card_data->card_id);
+      if (empty($order_ref_card_id) || $order_ref_card_id != $card->card_id) {
+        $order_wrapper->commerce_cardonfile = array('card_id' => $card->card_id);
         $order_wrapper->save();
       }
     }
@@ -1497,8 +1496,8 @@ function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_
   if (!empty($response['card_chosen'])) {
     $card_chosen = $response['card_chosen'];
   }
-  elseif (!empty($card_data)) {
-    $card_chosen = $card_data;
+  elseif (!empty($card)) {
+    $card_chosen = $card;
   }
 
   if (empty($response) || empty($response['status'])) {
@@ -1514,23 +1513,23 @@ function commerce_cardonfile_order_charge_card($order, $charge = array(), $card_
 /**
  * Returns TRUE if the card can be charged for the given order
  */
-function commerce_cardonfile_order_can_charge_card($order, $card_data) {
+function commerce_cardonfile_order_can_charge_card($order, $card) {
   // DENY if no order id
   if (empty($order->order_id)) {
     return FALSE;
   }
 
   // DENY if no owner provided
-  if (empty($order->uid) || empty($card_data->uid)) {
+  if (empty($order->uid) || empty($card->uid)) {
     return FALSE;
   }
 
   // DENY if owners do not match
-  if ($card_data->uid != $order->uid) {
+  if ($card->uid != $order->uid) {
     return FALSE;
   }
 
-  return commerce_cardonfile_can_charge($card_data);
+  return commerce_cardonfile_can_charge($card);
 }
 
 /**
