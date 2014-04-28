@@ -933,6 +933,22 @@ function commerce_cardonfile_delete_multiple($card_ids) {
 }
 
 /**
+ * Implements hook_commerce_customer_profile_can_delete().
+ *
+ * Don't allow a customer profile to be deleted (and trigger duplication)
+ * if it's referenced by a card.
+ */
+function commerce_cardonfile_commerce_customer_profile_can_delete($profile) {
+  $query = new EntityFieldQuery();
+  $query
+    ->entityCondition('entity_type', 'commerce_cardonfile')
+    ->fieldCondition('commerce_cardonfile_profile', 'profile_id', $profile->profile_id)
+    ->count();
+  $count = $query->execute();
+  return $count == 0;
+}
+
+/**
  * Set a card's instance default value
  */
 function commerce_cardonfile_set_default_card($card_id, $instance_default_value = 1) {
