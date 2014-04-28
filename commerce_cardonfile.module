@@ -335,9 +335,7 @@ function commerce_cardonfile_hook_info() {
   $hooks = array(
     'commerce_cardonfile_insert' => $base_info,
     'commerce_cardonfile_update' => $base_info,
-    'commerce_cardonfile_disable' => $base_info,
     'commerce_cardonfile_delete' => $base_info,
-    'commerce_cardonfile_can_delete' => $base_info,
     'commerce_cardonfile_chargeable_cards' => $base_info,
     'commerce_cardonfile_checkout_pane_form_alter' => $base_info,
   );
@@ -812,155 +810,126 @@ function commerce_cardonfile_element_options_list($stored_cards, $element_type =
 }
 
 /**
- * Loads stored card data by ID.
+ * Returns an initialized card entity.
  *
- * @param $card_id
- *   The local ID of the stored card data to load.
- *
- * @return
- *   An array containing the specified card data or FALSE if the specified card
- *   data does not exist.
- */
-function commerce_cardonfile_load($card_id) {
-  return entity_load_single('commerce_cardonfile', $card_id);
-}
-
-/**
- * Loads stored card data.
- *
- * @param $card_ids
- *   An array of card ids to load
- * @param $reset
- *   Whether to reset the internal transaction loading cache.
+ * @param $values
+ *   An array of values to set, keyed by property name.
  *
  * @return
- *   The cardonfile entities
- */
-function commerce_cardonfile_load_multiple($card_ids = array(), $reset = FALSE) {
-  return entity_load('commerce_cardonfile', $card_ids, array(), $reset);
-}
-
-/**
- * Loads stored card data for a user by payment method instance.
- * @param unknown $uid
- * @param string $instance_id
- * @param string $active
- * @return Ambigous <The, An>|boolean
- */
-function commerce_cardonfile_load_multiple_by_uid($uid, $instance_id = NULL, $active = TRUE) {
-
-  $return = array();
-  $query = new EntityFieldQuery();
-  $query->entityCondition('entity_type', 'commerce_cardonfile')
-  ->propertyCondition('uid', $uid);
-
-  if (!empty($instance_id)) {
-    $query->propertyCondition('instance_id', $instance_id);
-  }
-
-  if ($active) {
-    $query->propertyCondition('status', TRUE);
-  }
-
-  $result = $query->execute();
-
-  if (isset($result['commerce_cardonfile'])) {
-    return commerce_cardonfile_load_multiple(array_keys($result['commerce_cardonfile']));
-  }
-  else {
-    return FALSE;
-  }
-}
-
-/**
- * Loads stored card data by remote id.
- * @param unknown $remote_id
- * @return Ambigous <The, An>|boolean
- */
-function commerce_cardonfile_load_multiple_by_remote_id($remote_id) {
-  $return = array();
-  $query = new EntityFieldQuery();
-  $query->entityCondition('entity_type', 'commerce_cardonfile')
-  ->propertyCondition('remote_id', $remote_id);
-
-  $result = $query->execute();
-
-  if (isset($result['commerce_cardonfile'])) {
-    return commerce_cardonfile_load_multiple(array_keys($result['commerce_cardonfile']));
-  }
-  else {
-    return FALSE;
-  }
-}
-
-/**
- * Load the owners default cards
- *
- * @param $owner
- *   The user object of the owner
- * @param $instance_id
- *   The payment method instance id
- *
- * @return
- *   The default card or FALSE if no default card set.
- */
-function commerce_cardonfile_load_user_default_cards($uid, $instance_id = NULL) {
-
-  $return = array();
-  $query = new EntityFieldQuery();
-  $query->entityCondition('entity_type', 'commerce_cardonfile')
-  ->propertyCondition('uid', $uid);
-
-  if (!empty($instance_id)) {
-    $query->propertyCondition('instance_id', $instance_id);
-  }
-
-  $query->propertyCondition('status', TRUE);
-  $query->propertyCondition('instance_default', TRUE);
-
-  $result = $query->execute();
-
-  if (isset($result['commerce_cardonfile'])) {
-    return commerce_cardonfile_load_multiple(array_keys($result['commerce_cardonfile']));
-  }
-  else {
-    return FALSE;
-  }
-}
-
-/**
- * Returns an initialized Commerce Card on File entity.
- *
- * @param array $values
- * @return Ambigous <A, boolean>
+ *   A card entity with all default fields initialized.
  */
 function commerce_cardonfile_new(array $values = array()) {
   return entity_create('commerce_cardonfile', $values);
 }
 
 /**
- * Saves an array of card data.
+ * Loads a card by ID.
  *
- * @param $card
- *   The card entity.
+ * @param $card_id
+ *   The ID of the card to load.
  *
  * @return
- *
+ *   The loaded card entity or FALSE if not found.
  */
-function commerce_cardonfile_save($card, $billing_profile = NULL) {
+function commerce_cardonfile_load($card_id) {
+  return entity_load_single('commerce_cardonfile', $card_id);
+}
 
-  if (!empty($billing_profile)) {
+/**
+ * Loads multiple cards by ID or based on a set of matching conditions.
+ *
+ * @see entity_load()
+ *
+ * @param $card_ids
+ *   An array of card IDs.
+ * @param $conditions
+ *   An array of conditions on the {commerce_cardonfile} table in the form
+ *     'field' => $value.
+ * @param $reset
+ *   Whether to reset the internal cache.
+ *
+ * @return
+ *   An array of card entities indexed by card_id.
+ */
+function commerce_cardonfile_load_multiple($card_ids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('commerce_cardonfile', $card_ids, $conditions, $reset);
+}
 
-    // Clone the order profile to use on the Card on File entity.
-    unset($billing_profile->profile_id);
-    unset($billing_profile->revision_id);
-    commerce_customer_profile_save($billing_profile);
-
-    // Add the billing profile to the card on file.
-    $card->commerce_cardonfile_profile[LANGUAGE_NONE][0]['profile_id'] = $billing_profile->profile_id;
+/**
+ * Loads multiple cards belonging to a specific user.
+ *
+ * Only active cards (status = 1) are returned.
+ *
+ * @param $uid
+ *   The uid of the card owner.
+ * @param $instance_id
+ *   (Optional) The instance id of the payment method.
+ * @param $default_only
+ *   Whether to load only default cards. A user can have one default card per
+ *   payment method used. Defaults to FALSE.
+ *
+ * @return
+ *   An array of card entities indexed by card_id.
+ */
+function commerce_cardonfile_load_multiple_by_uid($uid, $instance_id = NULL, $default_only = FALSE) {
+  $query = new EntityFieldQuery();
+  $query
+    ->entityCondition('entity_type', 'commerce_cardonfile')
+    ->propertyCondition('uid', $uid)
+    ->propertyCondition('status', 1);
+  if (!empty($instance_id)) {
+    $query->propertyCondition('instance_id', $instance_id);
   }
+  if ($default_only) {
+    $query->propertyCondition('instance_default', TRUE);
+  }
+  $result = $query->execute();
 
+  if (isset($result['commerce_cardonfile'])) {
+    return commerce_cardonfile_load_multiple(array_keys($result['commerce_cardonfile']));
+  }
+  else {
+    return array();
+  }
+}
+
+/**
+ * Saves a card.
+ *
+ * @param $card
+ *   The card entity to save.
+ *
+ * @return
+ *   SAVED_NEW or SAVED_UPDATED depending on the operation performed.
+ */
+function commerce_cardonfile_save($card) {
   return entity_save('commerce_cardonfile', $card);
+}
+
+/**
+ * Deletes a card by ID.
+ *
+ * @param $card_id
+ *   The ID of the card to delete.
+ *
+ * @return
+ *   TRUE on success, FALSE otherwise.
+ */
+function commerce_cardonfile_delete($card_id) {
+  return entity_delete('commerce_cardonfile', $card_id);
+}
+
+/**
+ * Deletes multiple cards by ID.
+ *
+ * @param $card_ids
+ *   An array of card IDs to delete.
+ *
+ * @return
+ *   TRUE on success, FALSE otherwise.
+ */
+function commerce_cardonfile_delete_multiple($card_ids) {
+  return entity_delete_multiple('commerce_cardonfile', $card_ids);
 }
 
 /**
@@ -994,16 +963,6 @@ function commerce_cardonfile_set_default_card($card_id, $instance_default_value 
   }
 
   return FALSE;
-}
-
-/**
- * Deletes stored card data by local ID.
- *
- * @param $card_id
- *   The local ID of the card data to delete.
- */
-function commerce_cardonfile_delete($card_id) {
-  return entity_delete('commerce_cardonfile', $card_id);
 }
 
 /**
@@ -1301,7 +1260,7 @@ function commerce_cardonfile_order_select_card($order, $forced_instance_id = NUL
     'message' => 'No chargeable card on file is available for the order @order_id and user @uid.',
   );
 
-  if ($possible_cards = commerce_cardonfile_load_user_default_cards($order->uid, $forced_instance_id)) {
+  if ($possible_cards = commerce_cardonfile_load_multiple_by_uid($order->uid, $forced_instance_id, TRUE)) {
     // Determine any chargeable cards ...
     $unchargeable_cards = array();
     foreach ($possible_cards as $card_id => $possible_card) {
