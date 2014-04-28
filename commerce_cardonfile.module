@@ -261,7 +261,7 @@ function commerce_cardonfile_commerce_order_status_info() {
 }
 
 /**
- * Returns a list of cof data statuses
+ * Returns a list of card statuses.
  */
 function commerce_cardonfile_statuses() {
   $statuses = array(
@@ -272,43 +272,6 @@ function commerce_cardonfile_statuses() {
   );
 
   return $statuses;
-}
-
-/**
- * Returns the human readable title of any or all data statuses.
- *
- * @param $name
- *   Optional parameter specifying the name of the status whose title
- *     to return.
- *
- * @return
- *   Either an array of all status titles keyed by the status_id or a
- *     string containing the human readable title for the specified status. If a
- *     status is specified that does not exist, this function returns FALSE.
- */
-function commerce_cardonfile_status_get_title($name = NULL) {
-  $statuses = commerce_cardonfile_statuses();
-
-  // Return a status title if specified and it exists.
-  if (!empty($name)) {
-    if (isset($statuses[$name])) {
-      return $statuses[$name];
-    }
-    else {
-      // Return FALSE if it does not exist.
-      return FALSE;
-    }
-  }
-
-  // Otherwise return all titles.
-  return $statuses;
-}
-
-/**
- * Wraps commerce_cardonfile_status_get_title().
- */
-function commerce_cardonfile_status_options_list() {
-  return commerce_cardonfile_status_get_title();
 }
 
 /**
@@ -536,13 +499,6 @@ function commerce_cardonfile_user_access($account) {
 
   // ALLOW by default
   return TRUE;
-}
-
-/**
- * Redirects from a would be card data page to the user's stored payment methods tab.
- */
-function commerce_cardonfile_redirect_to_user($account) {
-  drupal_goto('user/' . $account->uid . '/cards');
 }
 
 /**
@@ -969,22 +925,14 @@ function commerce_cardonfile_set_default_card($card_id, $instance_default_value 
 }
 
 /**
- * Returns TRUE if the card data has NOT expired
+ * Validates the card expiration date.
+ *
+ * @return
+ *   TRUE if the card hasn't expired, FALSE otherwise.
  */
 function commerce_cardonfile_validate_card_expiration($card) {
-  if (!isset($card->card_exp_month) || !isset($card->card_exp_year)) {
-    return FALSE;
-  }
-
-  return commerce_cardonfile_validate_exp_date($card->card_exp_month, $card->card_exp_year);
-}
-
-/**
- * Returns TRUE if the card has NOT expired
- */
-function commerce_cardonfile_validate_exp_date($month, $year) {
   commerce_cardonfile_load_credit_card_helpers();
-  $check = commerce_payment_validate_credit_card_exp_date($month, $year);
+  $check = commerce_payment_validate_credit_card_exp_date($card->card_exp_month, $card->card_exp_year);
   return $check === TRUE;
 }
 
