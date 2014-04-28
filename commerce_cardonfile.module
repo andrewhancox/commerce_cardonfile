@@ -244,28 +244,15 @@ function commerce_cardonfile_flush_caches() {
  */
 function commerce_cardonfile_commerce_order_status_info() {
   $order_statuses = array();
-
-  // Create a new status before Pending so we can generate orders in recurring
-  // processes without interfering with the current cart for the user.
-  $order_statuses['cardonfile_charged'] = array(
-    'name' => 'cardonfile_charged',
-    'title' => t('Charged'),
-    'state' => 'pending',
-    'weight' => 1,
-  );
-
-  // Status for soft declined transactions.
   $order_statuses['cardonfile_payment_failed_soft_decline'] = array(
     'name' => 'cardonfile_payment_failed_soft_decline',
-    'title' => t('Payment failed'),
+    'title' => t('Payment failed (soft decline)'),
     'state' => 'pending',
     'weight' => -2,
   );
-
-  // Status for hard declined transactions.
   $order_statuses['cardonfile_payment_error_hard_decline'] = array(
     'name' => 'cardonfile_payment_error_hard_decline',
-    'title' => t('Payment error'),
+    'title' => t('Payment failed (hard decline)'),
     'state' => 'pending',
     'weight' => -3,
   );
