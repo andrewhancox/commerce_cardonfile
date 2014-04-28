@@ -10,12 +10,6 @@
  */
 function commerce_cardonfile_rules_data_info() {
   return array(
-    'commerce_cardonfile' => array(
-      'label' => t('card data'),
-      'group' => t('Card on File'),
-      'parent' => 'entity',
-      'token type' => 'commerce-cardonfile',
-    ),
     'commerce_cardonfile_charge_card_response' => array(
       'label' => t('charge card response'),
       'group' => t('Card on File'),

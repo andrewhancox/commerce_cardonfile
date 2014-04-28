@@ -1101,13 +1101,11 @@ function commerce_cardonfile_payment_method_implements($callback) {
   return isset($cache[$callback]) ? $cache[$callback] : array();
 }
 
-
-
 /**
- * Define property info for Carge Responce
+ * Defines property info for the charge response.
  */
 function commerce_cardonfile_charge_card_response_property_info_callback() {
-  return array(
+  $properties = array(
     'status' => array(
       'label' => t('Status'),
       'type' => 'boolean',
@@ -1126,7 +1124,6 @@ function commerce_cardonfile_charge_card_response_property_info_callback() {
     ),
     'message' => array(
       'label' => t('Message'),
-      'description' => t('Message for the process response.'),
       'type' => 'text',
       'getter callback' => 'commerce_cardonfile_charge_card_get_properties',
       'computed' => TRUE,
@@ -1136,6 +1133,8 @@ function commerce_cardonfile_charge_card_response_property_info_callback() {
       'type' => 'commerce_cardonfile',
     ),
   );
+
+  return array('property info' => $properties);
 }
 
 /**
