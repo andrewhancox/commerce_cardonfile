@@ -238,7 +238,6 @@ function commerce_cardonfile_views_default_views() {
     t('All'),
     t('Page'),
   );
-
   $views[$view->name] = $view;
 
   return $views;

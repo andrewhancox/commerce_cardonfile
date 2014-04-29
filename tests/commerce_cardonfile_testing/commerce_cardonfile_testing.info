@@ -1,0 +1,5 @@
+name = Commerce Card on File Testing
+description = Provides a test payment method implementing the Card on File API.
+package = Testing
+dependencies[] = commerce_cardonfile
+core = 7.x
