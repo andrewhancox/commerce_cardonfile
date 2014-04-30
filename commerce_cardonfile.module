@@ -1530,11 +1530,16 @@ function _commerce_cardonfile_payment_method_instances($method_id, $include_disa
 }
 
 /**
- * Callback for getting the formatted value of the card_number property.
+ * Entity Metadata getter callback.
  */
-function commerce_cardonfile_field_card_number_get($item, array $options, $name, $type, $context) {
-  if ($name == 'card_number') {
-    return commerce_cardonfile_format_credit_card_number($item->card_number, $item->card_type);
+function commerce_cardonfile_get_properties($item, array $options, $name, $type, $context) {
+  switch ($name) {
+    case 'card_number':
+      return commerce_cardonfile_format_credit_card_number($item->card_number, $item->card_type);
+    case 'card_exp':
+      $month = str_pad($item->card_exp_month, 2, '0', STR_PAD_LEFT);
+      $year = $item->card_exp_year;
+      return format_string('@month/@year', array('@month' => $month, '@year' => $year));
   }
 }
 

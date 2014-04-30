@@ -58,7 +58,7 @@ function commerce_cardonfile_entity_property_info() {
     'label' => t('Card number'),
     'description' => t('Truncated card number (last 4 digits).'),
     'type' => 'text',
-    'getter callback' => 'commerce_cardonfile_field_card_number_get',
+    'getter callback' => 'commerce_cardonfile_get_properties',
     'raw getter callback' => 'entity_property_verbatim_get',
     'setter callback' => 'entity_property_verbatim_set',
     'schema field' => 'card_number',
@@ -76,6 +76,14 @@ function commerce_cardonfile_entity_property_info() {
     'type' => 'integer',
     'setter callback' => 'entity_property_verbatim_set',
     'schema field' => 'card_exp_year',
+  );
+  $properties['card_exp'] = array(
+    'label' => t('Card expiration'),
+    'description' => t('Expiration month and year.'),
+    'type' => 'text',
+    'getter callback' => 'commerce_cardonfile_get_properties',
+    'computed' => TRUE,
+    'entity views field' => TRUE,
   );
   $properties['instance_default'] = array(
     'label' => t('Instance default'),
