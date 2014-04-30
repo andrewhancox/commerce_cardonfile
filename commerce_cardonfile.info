@@ -12,6 +12,9 @@ core = 7.x
 ; Entity class
 files[] = includes/commerce_cardonfile.entity.inc
 
+; Extra fields controller
+files[] = includes/commerce_cardonfile.extra_fields_controller.inc
+
 ; Views handlers
 files[] = includes/views/handlers/commerce_cardonfile_handler_field_card_label.inc
 files[] = includes/views/handlers/commerce_cardonfile_handler_field_card_number.inc

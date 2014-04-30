@@ -186,6 +186,7 @@ function commerce_cardonfile_entity_info() {
     'access callback' => 'commerce_cardonfile_access',
     'token type' => 'commerce-cardonfile',
     'metadata controller class' => '',
+    'extra fields controller class' => 'CommerceCardOnFileExtraFieldsController',
   );
 
   return $data;
@@ -878,6 +879,20 @@ function commerce_cardonfile_delete($card_id) {
  */
 function commerce_cardonfile_delete_multiple($card_ids) {
   return entity_delete_multiple('commerce_cardonfile', $card_ids);
+}
+
+/**
+ * Implements hook_entity_view().
+ */
+function commerce_cardonfile_entity_view($entity, $entity_type, $view_mode, $langcode) {
+  if ($entity_type == 'commerce_cardonfile') {
+    // Hide the labels of properties rendered as extra fields.
+    foreach ($entity->content as &$render_array) {
+      if (isset($render_array['#theme']) && $render_array['#theme'] == 'entity_property') {
+        $render_array['#label_hidden'] = TRUE;
+      }
+    }
+  }
 }
 
 /**

@@ -204,47 +204,16 @@ function commerce_cardonfile_card_form_submit($form, &$form_state) {
 
 /**
  * Builds the form for deleting cardonfile data.
- *
  */
 function commerce_cardonfile_delete_form($form, &$form_state, $card) {
-  module_load_include('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
-
-  $card_types = commerce_payment_credit_card_types();
-
-  $form['card_type'] = array(
-    '#type' => 'item',
-    '#title' => t('Card type'),
-    '#markup' => !empty($card_types[$card->card_type]) ? $card_types[$card->card_type] : $card->card_type,
-  );
-
-  $form['card_number'] = array(
-    '#type' => 'item',
-    '#title' => t('Card number'),
-    '#markup' => 'XXXX - XXXX - XXXX - ' . $card->card_number,
-  );
-
-  $form['card_expire'] = array(
-    '#type' => 'item',
-    '#title' => t('Expires'),
-    '#markup' => $card->card_exp_month . ' / ' . $card->card_exp_year,
-  );
-
-  $form['card_holder'] = array(
-    '#type' => 'item',
-    '#title' => t('Card holder'),
-    '#markup' => $card->card_name,
-  );
-
-  $form['card_data'] = array(
-    '#type' => 'value',
-    '#value' => $card,
-  );
+  $entity_view = entity_view('commerce_cardonfile', array($card), 'customer', NULL, TRUE);
+  $rendered_card = drupal_render($entity_view);
 
   return confirm_form(
     $form,
     t('Are you sure you want to delete this card?'),
     'user/' . $card->uid . '/cards',
-    theme('card_data_overview', array('card_data' => $card)),
+    $rendered_card,
     t('Delete')
   );
 }
