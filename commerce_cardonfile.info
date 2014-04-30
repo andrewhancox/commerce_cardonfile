@@ -13,9 +13,5 @@ core = 7.x
 files[] = includes/commerce_cardonfile.entity.inc
 
 ; Views handlers
-files[] = includes/views/handlers/commerce_cardonfile_handler_field_card_link.inc
-files[] = includes/views/handlers/commerce_cardonfile_handler_field_card_link_edit.inc
-files[] = includes/views/handlers/commerce_cardonfile_handler_field_card_link_delete.inc
 files[] = includes/views/handlers/commerce_cardonfile_handler_field_card_operations.inc
-files[] = includes/views/handlers/commerce_cardonfile_plugin_argument_validate_card_id.inc
 files[] = includes/views/handlers/commerce_cardonfile_plugin_argument_validate_owner.inc
