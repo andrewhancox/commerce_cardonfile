@@ -113,8 +113,7 @@ class CommerceCardOnFile extends Entity {
   protected function defaultLabel() {
     $card_type = t('Card');
     if (!empty($this->card_type)) {
-      commerce_cardonfile_load_credit_card_helpers();
-      $card_types = commerce_payment_credit_card_types();
+      $card_types = commerce_cardonfile_credit_card_types();
       if (isset($card_types[$this->card_type])) {
         $card_type = $card_types[$this->card_type];
       }

@@ -726,13 +726,9 @@ function commerce_cardonfile_commerce_checkout_form_submit($form, &$form_state) 
  *   An options array for selecting a card on file.
  */
 function commerce_cardonfile_element_options_list($stored_cards, $element_type = 'radios', $different = TRUE) {
+  $card_types = commerce_cardonfile_credit_card_types();
   // Build an options array of stored credit cards.
   $options = array();
-
-  // Load the credit card helper functions from the Payment module.
-  commerce_cardonfile_load_credit_card_helpers();
-  $card_types = commerce_payment_credit_card_types();
-
   foreach ($stored_cards as $card_id => $card) {
     $replacements = array(
       '@card_type' => !empty($card_types[$card->card_type]) ? $card_types[$card->card_type] : $card->card_type,
@@ -1531,6 +1527,16 @@ function _commerce_cardonfile_payment_method_instances($method_id, $include_disa
   }
 
   return $instances;
+}
+
+/**
+ * Returns an associative array of credit card types.
+ *
+ * Wraps commerce_payment_credit_card_types().
+ */
+function commerce_cardonfile_credit_card_types() {
+  commerce_cardonfile_load_credit_card_helpers();
+  return commerce_payment_credit_card_types();
 }
 
 /**

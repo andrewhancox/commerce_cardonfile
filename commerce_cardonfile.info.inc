@@ -44,6 +44,7 @@ function commerce_cardonfile_entity_property_info() {
     'description' => t('The card type.'),
     'type' => 'text',
     'setter callback' => 'entity_property_verbatim_set',
+    'options list' => 'commerce_cardonfile_credit_card_types',
     'schema field' => 'card_type',
   );
   $properties['card_name'] = array(
