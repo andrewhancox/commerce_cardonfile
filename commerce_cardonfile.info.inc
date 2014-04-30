@@ -58,6 +58,8 @@ function commerce_cardonfile_entity_property_info() {
     'label' => t('Card number'),
     'description' => t('Truncated card number (last 4 digits).'),
     'type' => 'text',
+    'getter callback' => 'commerce_cardonfile_field_card_number_get',
+    'raw getter callback' => 'entity_property_verbatim_get',
     'setter callback' => 'entity_property_verbatim_set',
     'schema field' => 'card_number',
   );

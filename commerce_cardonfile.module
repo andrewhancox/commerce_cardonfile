@@ -1530,6 +1530,45 @@ function _commerce_cardonfile_payment_method_instances($method_id, $include_disa
 }
 
 /**
+ * Callback for getting the formatted value of the card_number property.
+ */
+function commerce_cardonfile_field_card_number_get($item, array $options, $name, $type, $context) {
+  if ($name == 'card_number') {
+    return commerce_cardonfile_format_credit_card_number($item->card_number, $item->card_type);
+  }
+}
+
+/**
+ * Formats a truncated credit card number for display.
+ *
+ * While most credit cards have 16 numbers, some like American Express have
+ * less. This function respects those rules in order to generate a more
+ * believable mask.
+ *
+ * @param $card_number
+ *   Truncated card number (last 4 digits).
+ * @param $card_type
+ *   The card type.
+ *
+ * @return
+ *   The formatted credit card number with unknown numbers represented by an X.
+ *   Thus a visa ending with "1234" gets formatted as "XXXX-XXXX-XXXX-1234".
+ */
+function commerce_cardonfile_format_credit_card_number($card_number, $card_type) {
+  $special_lengths = array(
+    'amex' => 15,
+    'cb' => 14,
+    'dc' => 14,
+  );
+  $length = isset($special_lengths[$card_type]) ? $special_lengths[$card_type] : 16;
+
+  $padded_number = str_pad($card_number, $length, 'X', STR_PAD_LEFT);
+  $new_number = chunk_split($padded_number, 4, '-');
+  // chunk_split() returns an extra '-' at the end of the number, ignore it.
+  return substr($new_number, 0, -1);
+}
+
+/**
  * Returns an associative array of credit card types.
  *
  * Wraps commerce_payment_credit_card_types().
