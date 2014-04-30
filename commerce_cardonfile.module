@@ -161,8 +161,8 @@ function commerce_cardonfile_entity_info() {
     'fieldable' => TRUE,
     'entity keys' => array(
       'id' => 'card_id',
-      'label' => 'card_id',
     ),
+    'label callback' => 'entity_class_label',
     'bundles' => array(
       'commerce_cardonfile' => array(
         'label' => t('Card on File'),

@@ -108,6 +108,26 @@ class CommerceCardOnFile extends Entity {
   }
 
   /**
+   * Overrides Entity::defaultLabel().
+   */
+  protected function defaultLabel() {
+    $card_type = t('Card');
+    if (!empty($this->card_type)) {
+      commerce_cardonfile_load_credit_card_helpers();
+      $card_types = commerce_payment_credit_card_types();
+      if (isset($card_types[$this->card_type])) {
+        $card_type = $card_types[$this->card_type];
+      }
+    }
+
+    $args = array(
+      '@card_type' => $card_type,
+      '@card_number' => $this->card_number
+    );
+    return t('@card_type ending in @card_number', $args);
+  }
+
+  /**
    * Overrides Entity::save().
    */
   public function save() {
