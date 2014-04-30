@@ -1,10 +1,12 @@
 
 /**
  * @file
- * Administration styles for the Commerce Card on File module.
- *
- * Optimized for the Seven administration theme.
+ * Styles for the cards view.
  */
+
+.card-expired, .card-expired-description {
+  color: red;
+}
 
 .links.operations {
   text-transform: lowercase;

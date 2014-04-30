@@ -304,6 +304,15 @@ function commerce_cardonfile_views_api() {
 }
 
 /**
+ * Implement hook_views_pre_render().
+ */
+function commerce_cardonfile_views_pre_render(&$view) {
+  if (in_array($view->name, array('commerce_card_on_file_user_cards'))) {
+    drupal_add_css(drupal_get_path('module', 'commerce_cardonfile') . '/theme/commerce_cardonfile.view.css');
+  }
+}
+
+/**
  * Implements hook_permission().
  */
 function commerce_cardonfile_permission() {

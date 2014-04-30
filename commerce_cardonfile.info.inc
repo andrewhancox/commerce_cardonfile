@@ -83,7 +83,6 @@ function commerce_cardonfile_entity_property_info() {
     'type' => 'text',
     'getter callback' => 'commerce_cardonfile_get_properties',
     'computed' => TRUE,
-    'entity views field' => TRUE,
   );
   $properties['instance_default'] = array(
     'label' => t('Instance default'),

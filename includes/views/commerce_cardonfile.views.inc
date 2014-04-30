@@ -14,7 +14,6 @@ function commerce_cardonfile_views_data_alter(&$data) {
   $data['commerce_cardonfile']['instance_default']['filter']['label'] = t('Default');
   $data['commerce_cardonfile']['instance_default']['filter']['type'] = 'yes-no';
 
-  // Entity label.
   $data['commerce_cardonfile']['label'] = array(
     'field' => array(
       'title' => t('Label'),
@@ -22,7 +21,13 @@ function commerce_cardonfile_views_data_alter(&$data) {
       'handler' => 'commerce_cardonfile_handler_field_card_label',
     ),
   );
-  // Operation links.
+  $data['commerce_cardonfile']['card_exp'] = array(
+    'field' => array(
+      'title' => t('Card expiration'),
+      'help' => t('Expiration month and year.'),
+      'handler' => 'commerce_cardonfile_handler_field_card_exp',
+    ),
+  );
   $data['commerce_cardonfile']['operations'] = array(
     'field' => array(
       'title' => t('Operations links'),

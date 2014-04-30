@@ -15,5 +15,6 @@ files[] = includes/commerce_cardonfile.entity.inc
 ; Views handlers
 files[] = includes/views/handlers/commerce_cardonfile_handler_field_card_label.inc
 files[] = includes/views/handlers/commerce_cardonfile_handler_field_card_number.inc
+files[] = includes/views/handlers/commerce_cardonfile_handler_field_card_exp.inc
 files[] = includes/views/handlers/commerce_cardonfile_handler_field_card_operations.inc
 files[] = includes/views/handlers/commerce_cardonfile_plugin_argument_validate_owner.inc
