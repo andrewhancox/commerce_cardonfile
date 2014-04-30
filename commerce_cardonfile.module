@@ -152,13 +152,13 @@ function commerce_cardonfile_admin_paths() {
  */
 function commerce_cardonfile_entity_info() {
   $data = array();
-
   $data['commerce_cardonfile'] = array(
     'label' => t('Commerce Card on File'),
     'entity class' => 'CommerceCardOnFile',
     'controller class' => 'EntityAPIController',
     'base table' => 'commerce_cardonfile',
     'fieldable' => TRUE,
+    'module' => 'commerce_cardonfile',
     'entity keys' => array(
       'id' => 'card_id',
     ),
