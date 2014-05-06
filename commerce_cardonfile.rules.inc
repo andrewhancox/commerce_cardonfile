@@ -26,63 +26,6 @@ function commerce_cardonfile_rules_data_info() {
  */
 function commerce_cardonfile_rules_event_info() {
   $events = array();
-
-  $events['commerce_cardonfile_insert'] = array(
-    'label' => t('After saving a new card on file'),
-    'group' => t('Commerce Card on File'),
-    'access callback' => 'commerce_cardonfile_rules_access',
-    'variables' => array(
-      'card_data' => array(
-        'type' => 'commerce_cardonfile',
-        'label' => t('Card Data'),
-      ),
-    ),
-  );
-
-  $events['commerce_cardonfile_update'] = array(
-    'label' => t('After updating an existing card on file'),
-    'group' => t('Commerce Card on File'),
-    'access callback' => 'commerce_cardonfile_rules_access',
-    'variables' => array(
-      'card_data' => array(
-        'type' => 'commerce_cardonfile',
-        'label' => t('Card Data'),
-      ),
-      'card_data_unchanged' => array(
-        'type' => 'commerce_cardonfile',
-        'label' => t('Unchanged Card Data'),
-      ),
-    ),
-  );
-
-  $events['commerce_cardonfile_disable'] = array(
-    'label' => t('After disabling a card on file'),
-    'group' => t('Commerce Card on File'),
-    'access callback' => 'commerce_cardonfile_rules_access',
-    'variables' => array(
-      'card_data' => array(
-        'type' => 'commerce_cardonfile',
-        'label' => t('Card Data'),
-      ),
-      'card_data_unchanged' => array(
-        'type' => 'commerce_cardonfile',
-        'label' => t('Unchanged Card Data'),
-      ),
-    ),
-  );
-
-  $events['commerce_cardonfile_delete'] = array(
-    'label' => t('After deleting a card on file database record'),
-    'group' => t('Commerce Card on File'),
-    'access callback' => 'commerce_cardonfile_rules_access',
-    'variables' => array(
-      'card_data' => array(
-        'type' => 'commerce_cardonfile',
-        'label' => t('Card Data'),
-      ),
-    ),
-  );
-
   $events['commerce_cardonfile_charge_failed'] = array(
     'label' => t('After a failed attempt to charge an order'),
     'group' => t('Commerce Card on File'),
@@ -90,7 +33,7 @@ function commerce_cardonfile_rules_event_info() {
     'variables' => array(
       'card_data' => array(
         'type' => 'commerce_cardonfile',
-        'label' => t('Card Data'),
+        'label' => t('Card'),
         'optional' => TRUE,
       ),
       'order' => array(
@@ -108,7 +51,6 @@ function commerce_cardonfile_rules_event_info() {
       ),
     ),
   );
-
   $events['commerce_cardonfile_charge_success'] = array(
     'label' => t('After a successful chargeing of an order'),
     'group' => t('Commerce Card on File'),
@@ -116,7 +58,7 @@ function commerce_cardonfile_rules_event_info() {
     'variables' => array(
       'card_data' => array(
         'type' => 'commerce_cardonfile',
-        'label' => t('Card Data'),
+        'label' => t('Card'),
       ),
       'order' => array(
         'type' => 'commerce_order',
@@ -141,7 +83,6 @@ function commerce_cardonfile_rules_event_info() {
  */
 function commerce_cardonfile_rules_action_info() {
   $actions = array();
-
   $actions['commerce_cardonfile_order_select_card'] = array(
     'label' => t('Select card on file to charge'),
     'group' => t('Commerce Card on File'),
@@ -192,7 +133,7 @@ function commerce_cardonfile_rules_action_info() {
       ),
       'card_data' => array(
         'type' => 'commerce_cardonfile',
-        'label' => t('Card Data'),
+        'label' => t('Card'),
         'description' => t('If provided, Select Card Response will be ignored.'),
         'optional' => TRUE,
       ),
