@@ -17,6 +17,7 @@ function commerce_cardonfile_testing_commerce_payment_method_info() {
       'charge callback' => 'commerce_cardonfile_testing_payment_cardonfile_charge',
       'create callback' => 'commerce_cardonfile_testing_payment_cardonfile_create',
       'update callback' => 'commerce_cardonfile_testing_payment_cardonfile_update',
+      'delete callback' => 'commerce_cardonfile_testing_payment_cardonfile_delete',
     ),
   );
   return $payment_methods;
@@ -48,8 +49,8 @@ function commerce_cardonfile_testing_payment_submit_form($payment_method, $pane_
  */
 function commerce_cardonfile_testing_payment_submit_form_validate($payment_method, $pane_form, $pane_values, $order, $form_parents = array()) {
   if (isset($pane_values['cardonfile']) && is_numeric($pane_values['cardonfile'])) {
-    $card_data = commerce_cardonfile_load($pane_values['cardonfile']);
-    if ($card_data) {
+    $card = commerce_cardonfile_load($pane_values['cardonfile']);
+    if ($card) {
       // There is no need for validating a card on file, it already happened
       // when the card had been saved.
       return NULL;
@@ -80,11 +81,11 @@ function commerce_cardonfile_testing_payment_submit_form_submit($payment_method,
 
     if (is_numeric($cardonfile)) {
       // A stored card is selected to use.
-      $card_data = commerce_cardonfile_load($cardonfile);
+      $card = commerce_cardonfile_load($cardonfile);
     }
     elseif ($cardonfile == 'new' && $cardonfile_store) {
       // A new card is used and we are supposed to store it.
-      $card_data = (object) array(
+      $card = commerce_cardonfile_new(array(
         'uid' => $order->uid,
         'payment_method' => $payment_method['method_id'],
         'instance_id' => $payment_method['instance_id'],
@@ -95,16 +96,17 @@ function commerce_cardonfile_testing_payment_submit_form_submit($payment_method,
         'card_exp_month' => $pane_values['credit_card']['exp_month'],
         'card_exp_year' => $pane_values['credit_card']['exp_year'],
         'status' => 1,
-      );
-      commerce_cardonfile_save($card_data);
+      ));
+      commerce_cardonfile_save($card);
     }
 
-    if (isset($card_data)) {
+    if (isset($card)) {
       if ($cardonfile_instance_default) {
         // Card in use is designated as default.
-        commerce_cardonfile_set_default_card($card_data->card_id);
+        $card->instance_default = 1;
+        $card->save();
       }
-      return commerce_cardonfile_testing_payment_cardonfile_charge($payment_method, $card_data, $order, $charge);
+      return commerce_cardonfile_testing_payment_cardonfile_charge($payment_method, $card, $order, $charge);
     }
   }
 
@@ -142,7 +144,7 @@ function commerce_cardonfile_testing_payment_transaction($payment_method, $order
 /**
  * Card on File callback: charge credit card.
  */
-function commerce_cardonfile_testing_payment_cardonfile_charge($payment_method, $card_data, $order, $charge = NULL) {
+function commerce_cardonfile_testing_payment_cardonfile_charge($payment_method, $card, $order, $charge = NULL) {
   if (!isset($charge)) {
     $wrapper = entity_metadata_wrapper('commerce_order', $order);
     $charge = commerce_line_items_total($wrapper->commerce_line_items);
@@ -153,14 +155,21 @@ function commerce_cardonfile_testing_payment_cardonfile_charge($payment_method, 
 /**
  * Card on File callback: add new credit card.
  */
-function commerce_cardonfile_testing_payment_cardonfile_create($form, $form_state, $payment_method, $card_data) {
-  $card_data->remote_id = rand(1000, 9999);
-  return $card_data;
+function commerce_cardonfile_testing_payment_cardonfile_create($form, $form_state, $payment_method, $card) {
+  $card->remote_id = rand(1000, 9999);
+  return $card;
 }
 
 /**
  * Card on File callback: update credit card.
  */
-function commerce_cardonfile_testing_payment_cardonfile_update($form, $form_state, $payment_method, $card_data) {
+function commerce_cardonfile_testing_payment_cardonfile_update($form, $form_state, $payment_method, $card) {
+  return TRUE;
+}
+
+/**
+ * Card on File callback: delete credit card.
+ */
+function commerce_cardonfile_testing_payment_cardonfile_delete($form, $form_state, $payment_method, $card) {
   return TRUE;
 }
