@@ -6,34 +6,65 @@
  */
 
 /**
- * Menu item title callback: returns a Card Title for its pages
- * comprised of the card type and last 4 digits.
- *
- * @param $card
- *   The card entity as loaded via the URL wildcard.
- * @return
- *   A page title of the format "Card ##".
+ * Menu item title callback: returns the card title.
  */
 function commerce_cardonfile_card_title($card) {
-  return t('@type ending in @number', array('@type' => $card->card_type, '@number' => $card->card_number));
+  return $card->label();
 }
 
 /**
- * Displays the full details of a Card on file.
+ * Menu callback: displays the add card page.
+ *
+ * If there are multiple CoF payment methods available, show a list and
+ * require the user to select one. Otherwise redirect to the add form.
  */
-function commerce_cardonfile_card_view($card, $view_mode) {
-  return entity_view('commerce_cardonfile', array($card->card_id => $card), $view_mode, NULL, TRUE);
+function commerce_cardonfile_add_page() {
+  $account = menu_get_object('user');
+  $create_implements = commerce_cardonfile_payment_method_implements('create callback');
+  $content = array();
+  foreach ($create_implements as $method_id => $method_function) {
+    $payment_method_instances = _commerce_cardonfile_payment_method_instances($method_id);
+    foreach ($payment_method_instances as $instance_id => $payment_method) {
+      $path = 'user/' . $account->uid . '/cards/add/' . drupal_hash_base64($instance_id);
+      $item = menu_get_item($path);
+      if ($item['access']) {
+        $content[] = $item;
+      }
+    }
+  }
+
+  // Bypass the user/%user/cards/add listing if only one payment method is
+  // available.
+  if (count($content) == 1) {
+    $item = array_shift($content);
+    drupal_goto($item['href']);
+  }
+
+  return theme('card_add_list', array('content' => $content));
 }
 
 /**
- * Returns the appropriate Card on File form.
+ * Displays the add card list.
+ *
+ * @ingroup themeable
+ */
+function theme_card_add_list($variables) {
+  $output = '<dl class="commerce-cardonfile-add-card-list">';
+  foreach ($variables['content'] as $item) {
+    $output .= '<dt>' . l($item['title'], $item['href'], $item['localized_options']) . '</dt>';
+  }
+  $output .= '</dl>';
+
+  return $output;
+}
+
+/**
+ * Returns the appropriate card form.
  */
 function commerce_cardonfile_card_form_page($op, $card, $account) {
   $payment_method = commerce_payment_method_instance_load($card->instance_id);
 
   if ($op == 'update') {
-    drupal_set_title(t('Update your @type ending in @number', array('@type' => $card->card_type, '@number' => $card->card_number)));
-
     // This is not likely to happen, but if the payment method doesn't implement
     // the update callback, redirect the user back to the card listing page and
     // inform them about the error.
@@ -43,12 +74,11 @@ function commerce_cardonfile_card_form_page($op, $card, $account) {
     }
   }
   else {
-    drupal_set_title(t('Add new credit card'));
+    drupal_set_title(t('Add a card'));
     // Card data was initialized with the anonymous user as its owner. Set the
     // owner here to the user from the menu item, so that the form will receive
     // the complete information that is needed to save the card.
     $card->uid = $account->uid;
-    $card->created = REQUEST_TIME;
   }
 
   if ($form_callback = commerce_cardonfile_payment_method_callback($payment_method, $op . ' form callback')) {
@@ -60,14 +90,14 @@ function commerce_cardonfile_card_form_page($op, $card, $account) {
 }
 
 /**
- * Builds the form for creating/updating cardonfile data.
+ * Form callback: create or edit a card.
  */
 function commerce_cardonfile_card_form($form, &$form_state, $op, $card) {
   // Load the credit card helper functions from the Payment module.
   module_load_include('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
 
   // Pass along information to the validate and submit handlers.
-  $form_state['card_data'] = $card;
+  $form_state['card'] = $card;
   $form_state['op'] = $op;
 
   $fields = array(
@@ -91,11 +121,8 @@ function commerce_cardonfile_card_form($form, &$form_state, $op, $card) {
   }
   $form += commerce_payment_credit_card_form($fields, $defaults);
   if ($op == 'update') {
-    $credit_card_types = commerce_payment_credit_card_types();
-    $form['credit_card']['type']['#type'] = 'item';
-    $form['credit_card']['type']['#markup'] = $credit_card_types[$card->card_type];
-    $form['credit_card']['number']['#type'] = 'item';
-    $form['credit_card']['number']['#markup'] = 'XXXX - XXXX - XXXX - ' . $card->card_number;
+    $form['credit_card']['type']['#access'] = FALSE;
+    $form['credit_card']['number']['#access'] = FALSE;
   }
 
   $payment_method = commerce_payment_method_load($card->payment_method);
@@ -122,12 +149,12 @@ function commerce_cardonfile_card_form($form, &$form_state, $op, $card) {
   }
   if (($op == 'create' && !$existing_cards) || ($op == 'update' && $default_card)) {
     $form['credit_card']['cardonfile_instance_default']['#default_value'] = TRUE;
-    $form['credit_card']['cardonfile_instance_default']['#disabled'] = TRUE;
+    $form['credit_card']['cardonfile_instance_default']['#access'] = FALSE;
   }
 
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => ($op == 'create') ? t('Add card') : t('Update card data'),
+    '#value' => ($op == 'create') ? t('Add card') : t('Update card'),
     '#suffix' => l(t('Cancel'), 'user/' . $card->uid . '/cards'),
   );
 
@@ -135,7 +162,7 @@ function commerce_cardonfile_card_form($form, &$form_state, $op, $card) {
 }
 
 /**
- * Form validate handler: create/update card data.
+ * Validation callback for commerce_cardonfile_card_form().
  */
 function commerce_cardonfile_card_form_validate($form, &$form_state) {
   module_load_include('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
@@ -153,11 +180,11 @@ function commerce_cardonfile_card_form_validate($form, &$form_state) {
 }
 
 /**
- * Form submit handler: create/update card data.
+ * Submit callback for commerce_cardonfile_card_form().
  */
 function commerce_cardonfile_card_form_submit($form, &$form_state) {
   $op = $form_state['op'];
-  $card = $form_state['card_data'];
+  $card = $form_state['card'];
 
   $card->card_name = $form_state['values']['credit_card']['owner'];
   $card->card_exp_month = $form_state['values']['credit_card']['exp_month'];
@@ -180,7 +207,7 @@ function commerce_cardonfile_card_form_submit($form, &$form_state) {
       }
       else {
         $card_save = $card;
-        $confirm_message = t('The stored card data has been updated.');
+        $confirm_message = t('The card has been updated.');
       }
       commerce_cardonfile_save($card_save);
       if (!empty($form_state['values']['credit_card']['cardonfile_instance_default'])) {
@@ -222,12 +249,11 @@ function commerce_cardonfile_delete_form($form, &$form_state, $card) {
  * Form submit handler: delete stored card data.
  */
 function commerce_cardonfile_delete_form_submit($form, &$form_state) {
-  $card = $form_state['values']['card_data'];
+  $card = $form_state['build_info']['args'][0];
 
   // Invoke the payment method's card delete callback.
   $payment_method = commerce_payment_method_instance_load($card->instance_id);
   $callback = $payment_method['cardonfile']['delete callback'];
-
   if (function_exists($callback)) {
     if (!$callback($form, $form_state, $payment_method, $card)) {
       // Display a message if we failed to communicate properly with the payment
@@ -238,19 +264,9 @@ function commerce_cardonfile_delete_form_submit($form, &$form_state) {
     }
   }
 
-  // Disable the card data but retain the record.
-  $card->status = 0;
-  commerce_cardonfile_save($card);
+  // Delete the card.
+  commerce_cardonfile_delete($card->card_id);
 
-  drupal_set_message(t('The stored card data has been deleted.'));
-
-  // Redirect to the payment methods tab if the user has other stored payment.
-  $stored_cards = commerce_cardonfile_load_multiple_by_uid($card->uid);
-
-  if (!empty($stored_cards)) {
-    $form_state['redirect'] = 'user/' . $card->uid . '/cards';
-  }
-  else {
-    $form_state['redirect'] = 'user/' . $card->uid;
-  }
+  drupal_set_message(t('The card has been deleted.'));
+  $form_state['redirect'] = 'user/' . $card->uid . '/cards';
 }
