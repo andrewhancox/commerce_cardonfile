@@ -907,36 +907,16 @@ function commerce_cardonfile_commerce_customer_profile_can_delete($profile) {
 }
 
 /**
- * Set a card's instance default value
+ * Set a card's instance default value.
+ *
+ * @deprecated
+ *   Set $card->instance_default directly instead.
  */
-function commerce_cardonfile_set_default_card($card_id, $instance_default_value = 1) {
-  if (!empty($card_id)) {
-    if ($card = commerce_cardonfile_load($card_id)) {
-      $query = new EntityFieldQuery();
-      $query->entityCondition('entity_type', 'commerce_cardonfile');
-      $query->propertyCondition('instance_id', $card->instance_id);
-      $query->propertyCondition('uid', $card->uid);
-
-      $result = $query->execute();
-
-      if (isset($result['commerce_cardonfile'])) {
-        $instance_cards = commerce_cardonfile_load_multiple(array_keys($result['commerce_cardonfile']));
-
-        foreach ($instance_cards as $instance_card) {
-          if ($instance_card->card_id != $card->card_id) {
-            $instance_card->instance_default = 0;
-            commerce_cardonfile_save($instance_card);
-          }
-        }
-      }
-
-      $card->instance_default = !empty($instance_default_value);
-      return commerce_cardonfile_save($card);
-    }
-    return FALSE;
+function commerce_cardonfile_set_default_card($card_id) {
+  if ($card = commerce_cardonfile_load($card_id)) {
+    $card->instance_default = 1;
+    return $card->save();
   }
-
-  return FALSE;
 }
 
 /**

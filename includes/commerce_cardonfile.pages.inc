@@ -136,18 +136,7 @@ function commerce_cardonfile_card_form($form, &$form_state, $op, $card) {
   // are updating the current default card, so the user can't uncheck the
   // checkbox.
   $existing_cards = commerce_cardonfile_load_multiple_by_uid($card->uid, $card->instance_id, TRUE);
-  $default_card = FALSE;
-  if ($op == 'update' && !empty($existing_cards)) {
-    foreach ($existing_cards as $card) {
-      if ($card->instance_default) {
-        if ($card->card_id == $card->card_id) {
-          $default_card = TRUE;
-        }
-        break;
-      }
-    }
-  }
-  if (($op == 'create' && !$existing_cards) || ($op == 'update' && $default_card)) {
+  if (($op == 'create' && !$existing_cards) || ($op == 'update' && $card->instance_default)) {
     $form['credit_card']['cardonfile_instance_default']['#default_value'] = TRUE;
     $form['credit_card']['cardonfile_instance_default']['#access'] = FALSE;
   }
@@ -193,6 +182,7 @@ function commerce_cardonfile_card_form_submit($form, &$form_state) {
     $card->card_number = substr($form_state['values']['credit_card']['number'], -4);
     $card->card_type = $form_state['values']['credit_card']['type'];
   }
+  $card->instance_default = $form_state['values']['credit_card']['cardonfile_instance_default'];
 
   // Invoke the payment method's card create/update callback.
   $payment_method = commerce_payment_method_instance_load($card->instance_id);
@@ -210,9 +200,6 @@ function commerce_cardonfile_card_form_submit($form, &$form_state) {
         $confirm_message = t('The card has been updated.');
       }
       commerce_cardonfile_save($card_save);
-      if (!empty($form_state['values']['credit_card']['cardonfile_instance_default'])) {
-        commerce_cardonfile_set_default_card($card_save->card_id);
-      }
       drupal_set_message($confirm_message);
       $success = TRUE;
     }

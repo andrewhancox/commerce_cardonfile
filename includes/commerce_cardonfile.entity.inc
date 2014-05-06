@@ -135,16 +135,40 @@ class CommerceCardOnFile extends Entity {
     if (!$this->card_id) {
       $this->created = REQUEST_TIME;
     }
-    // Reactivate a declined card after its expiration date has been modified.
-    if ($this->card_id && $this->status == 3) {
-      $this->original = entity_load_unchanged('commerce_cardonfile', $this->card_id);
-      $exp_month_changed = $this->original->card_exp_month != $this->card_exp_month;
-      $exp_year_changed = $this->original->card_exp_year != $this->card_exp_year;
-      if ($exp_month_changed || $exp_year_changed) {
-        $this->status = 1;
+    if ($this->card_id) {
+      $this->original = $original = entity_load_unchanged('commerce_cardonfile', $this->card_id);
+      // Reactivate a declined card after its expiration date has been modified.
+      if ($this->status == 3) {
+        $exp_month_changed = $this->original->card_exp_month != $this->card_exp_month;
+        $exp_year_changed = $this->original->card_exp_year != $this->card_exp_year;
+        if ($exp_month_changed || $exp_year_changed) {
+          $this->status = 1;
+        }
       }
     }
 
+    // Perform the save.
     parent::save();
+
+    // If the card is now instance_default, remove the flag from other cards.
+    $is_update = isset($original);
+    $value_changed = $is_update && $this->instance_default != $original->instance_default;
+    if ($this->instance_default && (!$is_update || $value_changed)) {
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'commerce_cardonfile');
+      $query->entityCondition('entity_id', $this->card_id, '<>');
+      $query->propertyCondition('instance_id', $this->instance_id);
+      $query->propertyCondition('uid', $this->uid);
+      $query->propertyCondition('instance_default', TRUE);
+      $result = $query->execute();
+      if (isset($result['commerce_cardonfile'])) {
+        $card_ids = array_keys($result['commerce_cardonfile']);
+        $other_cards = commerce_cardonfile_load_multiple($card_ids);
+        foreach ($other_cards as $other_card) {
+          $other_card->instance_default = 0;
+          commerce_cardonfile_save($other_card);
+        }
+      }
+    }
   }
 }
