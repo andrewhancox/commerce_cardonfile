@@ -250,20 +250,6 @@ function commerce_cardonfile_commerce_order_status_info() {
 }
 
 /**
- * Returns a list of card statuses.
- */
-function commerce_cardonfile_statuses() {
-  $statuses = array(
-    0 => t('Disabled'),
-    1 => t('Active'),
-    2 => t('Not deletable'),
-    3 => t('Declined'),
-  );
-
-  return $statuses;
-}
-
-/**
  * Implements hook_hook_info().
  */
 function commerce_cardonfile_hook_info() {
@@ -932,6 +918,57 @@ function commerce_cardonfile_validate_card_expiration($card) {
 }
 
 /**
+ * Formats a truncated credit card number for display.
+ *
+ * While most credit cards have 16 numbers, some like American Express have
+ * less. This function respects those rules in order to generate a more
+ * believable mask.
+ *
+ * @param $card_number
+ *   Truncated card number (last 4 digits).
+ * @param $card_type
+ *   The card type.
+ *
+ * @return
+ *   The formatted credit card number with unknown numbers represented by an X.
+ *   Thus a visa ending with "1234" gets formatted as "XXXX-XXXX-XXXX-1234".
+ */
+function commerce_cardonfile_format_credit_card_number($card_number, $card_type) {
+  $special_lengths = array(
+    'amex' => 15,
+    'cb' => 14,
+    'dc' => 14,
+  );
+  $length = isset($special_lengths[$card_type]) ? $special_lengths[$card_type] : 16;
+
+  $padded_number = str_pad($card_number, $length, 'X', STR_PAD_LEFT);
+  $new_number = chunk_split($padded_number, 4, '-');
+  // chunk_split() returns an extra '-' at the end of the number, ignore it.
+  return substr($new_number, 0, -1);
+}
+
+/**
+ * Returns an associative array of credit card types.
+ *
+ * Wraps commerce_payment_credit_card_types().
+ */
+function commerce_cardonfile_credit_card_types() {
+  commerce_cardonfile_load_credit_card_helpers();
+  return commerce_payment_credit_card_types();
+}
+
+/**
+ * Loads credit card helper functions in commerce_payment
+ */
+function commerce_cardonfile_load_credit_card_helpers() {
+  static $loaded = FALSE;
+
+  if (!$loaded) {
+    $loaded = module_load_include('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
+  }
+}
+
+/**
  * Returns an array of all available payment method cardonfile callbacks
  */
 function commerce_cardonfile_payment_method_available_callbacks() {
@@ -1042,158 +1079,6 @@ function commerce_cardonfile_payment_method_implements($callback) {
   }
 
   return isset($cache[$callback]) ? $cache[$callback] : array();
-}
-
-/**
- * Defines property info for the charge response.
- */
-function commerce_cardonfile_charge_card_response_property_info_callback() {
-  $properties = array(
-    'status' => array(
-      'label' => t('Status'),
-      'type' => 'boolean',
-    ),
-    'code' => array(
-      'label' => t('Status Code'),
-      'type' => 'text',
-      'options list' => 'commerce_cardonfile_charge_card_status_code_options',
-    ),
-    'error_level' => array(
-      'label' => t('Error Level'),
-      'type' => 'integer',
-      'options list' => 'commerce_cardonfile_charge_card_error_level_options',
-      'getter callback' => 'commerce_cardonfile_charge_card_get_properties',
-      'computed' => TRUE,
-    ),
-    'message' => array(
-      'label' => t('Message'),
-      'type' => 'text',
-      'getter callback' => 'commerce_cardonfile_charge_card_get_properties',
-      'computed' => TRUE,
-    ),
-    'card_chosen' => array(
-      'label' => t('Card Chosen'),
-      'type' => 'commerce_cardonfile',
-    ),
-  );
-
-  return array('property info' => $properties);
-}
-
-/**
- * Implements hook_commerce_payment_transaction_status_info().
- */
-function commerce_cardonfile_commerce_payment_transaction_status_info() {
-  $statuses = array();
-  foreach (commerce_cardonfile_charge_card_failure_status_code_options() as $status_name => $title) {
-    $statuses[$status_name] = array(
-      'status' => $status_name,
-      'title' => $title,
-      'icon' => drupal_get_path('module', 'commerce_payment') . '/theme/icon-failure.png',
-      'total' => TRUE,
-    );
-  }
-  return $statuses;
-}
-
-/**
- * Returns an options list of processing card response status codes
- */
-function commerce_cardonfile_charge_card_status_code_options() {
-  return array(
-    COMMERCE_COF_PROCESS_CODE_INSUFFICIENT_DATA => t('Insufficient data'),
-    COMMERCE_COF_PROCESS_CODE_CARD_NA => t('No card available'),
-    COMMERCE_COF_PROCESS_CODE_CARD_NOT_CHARGEABLE => t('Card not chargeable'),
-    COMMERCE_COF_PROCESS_CODE_METHOD_EMPTY => t('Payment method not valid'),
-    COMMERCE_COF_PROCESS_CODE_METHOD_NOT_CAPABLE => t('Payment method not capable'),
-    COMMERCE_COF_PROCESS_CODE_METHOD_SUCCESS => t('Payment method success'),
-  ) + commerce_cardonfile_charge_card_failure_status_code_options();
-}
-
-/**
- * Returns an option list of processing card response failure status codes.
- *
- * These statuses are relevant when it comes to dunning management.
- */
-function commerce_cardonfile_charge_card_failure_status_code_options() {
-  return array(
-    COMMERCE_COF_PROCESS_CODE_CARD_EXPIRED => t('Card expired'),
-    // For the sake of backwards compatibility, we leave this generic failure
-    // status here.
-    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE => t('Payment method failure'),
-    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_INSUFFICIENT_FUNDS => t('Insufficient funds'),
-    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_LIMIT_EXCEEDED => t('Limit exceeded'),
-    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_CALL_ISSUER => t('Call issuer'),
-    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_TEMPORARY_HOLD => t('Temporary hold'),
-    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GENERIC_DECLINE => t('Generic decline'),
-    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_HARD_DECLINE => t('Hard decline (will never succeed)'),
-    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GATEWAY_ERROR => t('Try again/gateway error'),
-    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GATEWAY_UNAVAILABLE => t('Issuer or gateway unavailable'),
-    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GATEWAY_CONFIGURATION_ERROR => t('Communication/configuration error'),
-  );
-}
-
-/**
- * Returns an option list of processing card response error level
- */
-function commerce_cardonfile_charge_card_error_level_options() {
-  return array(
-    0 => t('Notice'),
-    1 => t('Warning'),
-    2 => t('Error'),
-  );
-}
-
-/**
- * Callback for getting payment transaction properties.
- */
-function commerce_cardonfile_charge_card_get_properties($data, array $options, $name) {
-  switch ($name) {
-    case 'message':
-      if (!empty($data['message'])) {
-        $message_variables = array();
-        if (!empty($data['message_variables']) && is_array($data['message_variables'])) {
-          $message_variables = $data['message_variables'];
-        }
-        return t($data['message'], $message_variables);
-      }
-      else {
-        return '';
-      }
-
-    case 'error_level':
-      return commerce_cardonfile_charge_card_error_level($data);
-  }
-}
-
-/**
- * Returns the error level for a given card processing response array
- */
-function commerce_cardonfile_charge_card_error_level($response) {
-  $level = 0;
-  $status_codes = commerce_cardonfile_charge_card_status_code_options();
-  if (empty($response['code']) || !isset($status_codes[$response['code']])) {
-    return $level;
-  }
-
-  switch ($response['code']) {
-    case COMMERCE_COF_PROCESS_CODE_INSUFFICIENT_DATA:
-    case COMMERCE_COF_PROCESS_CODE_CARD_NA:
-      $level = 0;
-      break;
-
-    case COMMERCE_COF_PROCESS_CODE_METHOD_EMPTY:
-    case COMMERCE_COF_PROCESS_CODE_METHOD_NOT_CAPABLE:
-      $level = 1;
-      break;
-
-    default:
-      // Every other possible status code falls into this level of error.
-      $level = 2;
-      break;
-  }
-
-  return $level;
 }
 
 /**
@@ -1529,6 +1414,20 @@ function _commerce_cardonfile_payment_method_instances($method_id, $include_disa
 }
 
 /**
+ * Returns a list of card statuses.
+ */
+function commerce_cardonfile_statuses() {
+  $statuses = array(
+    0 => t('Disabled'),
+    1 => t('Active'),
+    2 => t('Not deletable'),
+    3 => t('Declined'),
+  );
+
+  return $statuses;
+}
+
+/**
  * Entity Metadata getter callback.
  */
 function commerce_cardonfile_get_properties($item, array $options, $name, $type, $context) {
@@ -1543,52 +1442,154 @@ function commerce_cardonfile_get_properties($item, array $options, $name, $type,
 }
 
 /**
- * Formats a truncated credit card number for display.
- *
- * While most credit cards have 16 numbers, some like American Express have
- * less. This function respects those rules in order to generate a more
- * believable mask.
- *
- * @param $card_number
- *   Truncated card number (last 4 digits).
- * @param $card_type
- *   The card type.
- *
- * @return
- *   The formatted credit card number with unknown numbers represented by an X.
- *   Thus a visa ending with "1234" gets formatted as "XXXX-XXXX-XXXX-1234".
+ * Defines property info for the charge response.
  */
-function commerce_cardonfile_format_credit_card_number($card_number, $card_type) {
-  $special_lengths = array(
-    'amex' => 15,
-    'cb' => 14,
-    'dc' => 14,
+function commerce_cardonfile_charge_card_response_property_info_callback() {
+  $properties = array(
+    'status' => array(
+      'label' => t('Status'),
+      'type' => 'boolean',
+    ),
+    'code' => array(
+      'label' => t('Status Code'),
+      'type' => 'text',
+      'options list' => 'commerce_cardonfile_charge_card_status_code_options',
+    ),
+    'error_level' => array(
+      'label' => t('Error Level'),
+      'type' => 'integer',
+      'options list' => 'commerce_cardonfile_charge_card_error_level_options',
+      'getter callback' => 'commerce_cardonfile_charge_card_get_properties',
+      'computed' => TRUE,
+    ),
+    'message' => array(
+      'label' => t('Message'),
+      'type' => 'text',
+      'getter callback' => 'commerce_cardonfile_charge_card_get_properties',
+      'computed' => TRUE,
+    ),
+    'card_chosen' => array(
+      'label' => t('Card Chosen'),
+      'type' => 'commerce_cardonfile',
+    ),
   );
-  $length = isset($special_lengths[$card_type]) ? $special_lengths[$card_type] : 16;
 
-  $padded_number = str_pad($card_number, $length, 'X', STR_PAD_LEFT);
-  $new_number = chunk_split($padded_number, 4, '-');
-  // chunk_split() returns an extra '-' at the end of the number, ignore it.
-  return substr($new_number, 0, -1);
+  return array('property info' => $properties);
 }
 
 /**
- * Returns an associative array of credit card types.
+ * Implements hook_commerce_payment_transaction_status_info().
+ */
+function commerce_cardonfile_commerce_payment_transaction_status_info() {
+  $statuses = array();
+  foreach (commerce_cardonfile_charge_card_failure_status_code_options() as $status_name => $title) {
+    $statuses[$status_name] = array(
+      'status' => $status_name,
+      'title' => $title,
+      'icon' => drupal_get_path('module', 'commerce_payment') . '/theme/icon-failure.png',
+      'total' => TRUE,
+    );
+  }
+  return $statuses;
+}
+
+/**
+ * Returns an options list of processing card response status codes
+ */
+function commerce_cardonfile_charge_card_status_code_options() {
+  return array(
+    COMMERCE_COF_PROCESS_CODE_INSUFFICIENT_DATA => t('Insufficient data'),
+    COMMERCE_COF_PROCESS_CODE_CARD_NA => t('No card available'),
+    COMMERCE_COF_PROCESS_CODE_CARD_NOT_CHARGEABLE => t('Card not chargeable'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_EMPTY => t('Payment method not valid'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_NOT_CAPABLE => t('Payment method not capable'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_SUCCESS => t('Payment method success'),
+  ) + commerce_cardonfile_charge_card_failure_status_code_options();
+}
+
+/**
+ * Returns an option list of processing card response failure status codes.
  *
- * Wraps commerce_payment_credit_card_types().
+ * These statuses are relevant when it comes to dunning management.
  */
-function commerce_cardonfile_credit_card_types() {
-  commerce_cardonfile_load_credit_card_helpers();
-  return commerce_payment_credit_card_types();
+function commerce_cardonfile_charge_card_failure_status_code_options() {
+  return array(
+    COMMERCE_COF_PROCESS_CODE_CARD_EXPIRED => t('Card expired'),
+    // For the sake of backwards compatibility, we leave this generic failure
+    // status here.
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE => t('Payment method failure'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_INSUFFICIENT_FUNDS => t('Insufficient funds'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_LIMIT_EXCEEDED => t('Limit exceeded'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_CALL_ISSUER => t('Call issuer'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_TEMPORARY_HOLD => t('Temporary hold'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GENERIC_DECLINE => t('Generic decline'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_HARD_DECLINE => t('Hard decline (will never succeed)'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GATEWAY_ERROR => t('Try again/gateway error'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GATEWAY_UNAVAILABLE => t('Issuer or gateway unavailable'),
+    COMMERCE_COF_PROCESS_CODE_METHOD_FAILURE_GATEWAY_CONFIGURATION_ERROR => t('Communication/configuration error'),
+  );
 }
 
 /**
- * Loads credit card helper functions in commerce_payment
+ * Returns an option list of processing card response error level
  */
-function commerce_cardonfile_load_credit_card_helpers() {
-  static $loaded = FALSE;
+function commerce_cardonfile_charge_card_error_level_options() {
+  return array(
+    0 => t('Notice'),
+    1 => t('Warning'),
+    2 => t('Error'),
+  );
+}
 
-  if (!$loaded) {
-    $loaded = module_load_include('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
+/**
+ * Callback for getting payment transaction properties.
+ */
+function commerce_cardonfile_charge_card_get_properties($data, array $options, $name) {
+  switch ($name) {
+    case 'message':
+      if (!empty($data['message'])) {
+        $message_variables = array();
+        if (!empty($data['message_variables']) && is_array($data['message_variables'])) {
+          $message_variables = $data['message_variables'];
+        }
+        return t($data['message'], $message_variables);
+      }
+      else {
+        return '';
+      }
+
+    case 'error_level':
+      return commerce_cardonfile_charge_card_error_level($data);
   }
 }
+
+/**
+ * Returns the error level for a given card processing response array
+ */
+function commerce_cardonfile_charge_card_error_level($response) {
+  $level = 0;
+  $status_codes = commerce_cardonfile_charge_card_status_code_options();
+  if (empty($response['code']) || !isset($status_codes[$response['code']])) {
+    return $level;
+  }
+
+  switch ($response['code']) {
+    case COMMERCE_COF_PROCESS_CODE_INSUFFICIENT_DATA:
+    case COMMERCE_COF_PROCESS_CODE_CARD_NA:
+      $level = 0;
+      break;
+
+    case COMMERCE_COF_PROCESS_CODE_METHOD_EMPTY:
+    case COMMERCE_COF_PROCESS_CODE_METHOD_NOT_CAPABLE:
+      $level = 1;
+      break;
+
+    default:
+      // Every other possible status code falls into this level of error.
+      $level = 2;
+      break;
+  }
+
+  return $level;
+}
+
