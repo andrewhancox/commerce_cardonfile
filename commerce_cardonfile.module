@@ -428,6 +428,11 @@ function commerce_cardonfile_access($op = 'view', $card = NULL, $account = NULL)
       break;
   }
 
+  // DENY if callback does NOT exist for specific operations
+  if (empty($op_callback)) {
+    return FALSE;
+  }
+
   // ALLOW access for any user with administer permission.
   if (user_access('administer card data') || user_access("$op any card data")) {
     return TRUE;
@@ -437,11 +442,6 @@ function commerce_cardonfile_access($op = 'view', $card = NULL, $account = NULL)
   // permission when they are accessing to their own profile.
   if ($op == 'create' && user_access('create own card data') && $account->uid == $user->uid) {
     return TRUE;
-  }
-
-  // DENY if callback does NOT exist for specific operations
-  if (empty($op_callback)) {
-    return FALSE;
   }
 
   // ALLOW access for users with permission to manage their own card data.
@@ -1579,4 +1579,3 @@ function commerce_cardonfile_charge_card_error_level($response) {
 
   return $level;
 }
-
