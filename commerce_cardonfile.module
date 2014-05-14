@@ -1461,7 +1461,7 @@ function commerce_cardonfile_charge_card_response_property_info_callback() {
     ),
   );
 
-  return array('property info' => $properties);
+  return $properties;
 }
 
 /**

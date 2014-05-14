@@ -11,8 +11,7 @@
  * Provides commerce-cardonfile-charge-card-response tokens.
  */
 function commerce_cardonfile_token_info() {
-  $property_info = commerce_cardonfile_charge_card_response_property_info_callback();
-  $properties = $property_info['property info'];
+  $properties = commerce_cardonfile_charge_card_response_property_info_callback();
   // Remove unsupported properties.
   unset($properties['card_chosen']);
 
@@ -62,7 +61,8 @@ function commerce_cardonfile_tokens($type, $tokens, array $data = array(), array
   // Make a pseudo wrapper for response data.
   $wrapper_info = array();
   if (isset($token_info[$type]['property_callback'])) {
-    $wrapper_info = $token_info[$type]['property_callback']();
+    $property_info = $token_info[$type]['property_callback']();
+    $wrapper_info = array('property info' => $property_info);
   }
   $wrapper = new EntityStructureWrapper($token_info[$type]['property_type'], $data[$type], $wrapper_info);
 
