@@ -148,6 +148,7 @@ function commerce_cardonfile_views_default_views() {
   $handler->display->display_options['arguments']['user']['table'] = 'commerce_cardonfile';
   $handler->display->display_options['arguments']['user']['field'] = 'user';
   $handler->display->display_options['arguments']['user']['default_action'] = 'not found';
+  $handler->display->display_options['arguments']['user']['exception']['value'] = '';
   $handler->display->display_options['arguments']['user']['default_argument_type'] = 'fixed';
   $handler->display->display_options['arguments']['user']['summary']['number_of_records'] = '0';
   $handler->display->display_options['arguments']['user']['summary']['format'] = 'default_summary';
