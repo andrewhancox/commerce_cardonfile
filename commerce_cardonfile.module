@@ -1056,6 +1056,11 @@ function commerce_cardonfile_payment_method_implements($callback) {
     foreach ($payment_methods as $method_id => $payment_method) {
       foreach ($available_callbacks as $available_callback) {
         if (!empty($payment_method['cardonfile'][$available_callback])) {
+          // Include the payment method file if specified.
+          if (!empty($payment_method['file'])) {
+            $parts = explode('.', $payment_method['file']);
+            module_load_include(array_pop($parts), $payment_method['module'], implode('.', $parts));
+          }
           $func = $payment_method['cardonfile'][$available_callback];
           if (function_exists($func)) {
             $cache[$available_callback][$method_id] = $func;
