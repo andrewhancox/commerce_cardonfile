@@ -79,21 +79,16 @@ function commerce_cardonfile_menu() {
     }
   }
 
-  $items['user/%user/cards/%commerce_cardonfile'] = array(
+  $items['user/%user/cards/%commerce_cardonfile/edit'] = array(
     'title callback' => 'commerce_cardonfile_card_title',
     'title arguments' => array(3),
     'page callback' => 'commerce_cardonfile_card_form_page',
     'page arguments' => array('update', 3, 1),
     'access callback' => 'commerce_cardonfile_access',
     'access arguments' => array('update', 3),
-    'file' => 'includes/commerce_cardonfile.pages.inc',
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
-  );
-  $items['user/%user/cards/%commerce_cardonfile/edit'] = array(
-    'title' => 'Edit',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
-    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    'file' => 'includes/commerce_cardonfile.pages.inc',
   );
   $items['user/%user/cards/%commerce_cardonfile/delete'] = array(
     'title' => 'Delete',
@@ -101,7 +96,6 @@ function commerce_cardonfile_menu() {
     'page arguments' => array('commerce_cardonfile_delete_form', 3),
     'access callback' => 'commerce_cardonfile_access',
     'access arguments' => array('delete', 3),
-    'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_INLINE,
     'weight' => 5,
     'file' => 'includes/commerce_cardonfile.pages.inc',
