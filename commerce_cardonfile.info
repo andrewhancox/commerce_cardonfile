@@ -9,6 +9,9 @@ dependencies[] = commerce_customer
 dependencies[] = entity
 core = 7.x
 
+; Migration destination
+files[] = commerce_cardonfile.migrate.inc
+
 ; Entity class
 files[] = includes/commerce_cardonfile.entity.inc
 
